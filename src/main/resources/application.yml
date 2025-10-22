@@ -1,0 +1,47 @@
+spring:
+  profiles:
+    default: dev # Perfil por defecto
+---
+spring:
+  config:
+    activate:
+      on-profile: dev # Configuración para el perfil 'dev'
+  datasource:
+    # === ¡¡¡IMPORTANTE!!! Revisa que estos datos coincidan con tu BD local ===
+    url: jdbc:postgresql://localhost:5432/cudeca_db
+    username: cudeca_user
+    password: password_seguro
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate # Valida que el esquema de BD coincida con las entidades JPA
+    show-sql: true # Muestra SQL en consola
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration # Dónde buscar los scripts SQL
+---
+spring:
+  config:
+    activate:
+      on-profile: prod # Configuración para el perfil 'prod' (despliegue)
+  datasource:
+    # Estas se leerán de las variables de entorno en Render/Railway
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
