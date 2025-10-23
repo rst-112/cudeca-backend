@@ -31,7 +31,7 @@ spring:
     activate:
       on-profile: prod # Configuración para el perfil 'prod' (despliegue)
   datasource:
-    # Estas se leerán de las variables de entorno en Render/Railway
+    # Estas se leerán de las variables de entorno en Render
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
@@ -44,6 +44,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
+    baseline-on-migrate: true
     locations: classpath:db/migration
 server:
   port: ${SERVER_PORT:8080}
