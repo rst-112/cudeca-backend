@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="Cudeca Backend PMD Ruleset"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>Ruleset estable</description>
+
+    <!-- Ruleset oficial y estable de Java -->
+    <rule ref="category/java/bestpractices.xml"/>
+
+    <!-- Excluir clases de bootstrap/framework -->
+    <exclude-pattern>.*/CudecaBackendApplication\.java</exclude-pattern>
+    <exclude-pattern>.*/SecurityConfig\.java</exclude-pattern>
+
+</ruleset>

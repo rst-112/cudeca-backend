@@ -14,47 +14,69 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Configuración de seguridad básica de la aplicación.
+ * Define políticas de CORS, sesiones y autorización de endpoints.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /**
+     * Configura la cadena de filtros de seguridad para HTTP.
+     *
+     * @param http configuración de seguridad HTTP
+     * @return el SecurityFilterChain construido
+     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                // Configuración de CORS
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        // Permitir acceso sin autenticación a endpoints públicos (login, registro, quizás listar eventos públicos)
-                        // ¡¡AJUSTA ESTAS RUTAS SEGÚN TU DISEÑO DE API!!
-                        .requestMatchers("/api/auth/**", "/api/public/**", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                        .anyRequest().authenticated()
-                );
-        // Aquí se añadiría la configuración para JWT (filtros, etc.) más adelante
+    public SecurityFilterChain securityFilterChain(final HttpSecurity http) {
+        try {
+            http
+                    // Configuración de CORS
+                    .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                    .csrf(AbstractHttpConfigurer::disable)
+                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    .authorizeHttpRequests(auth -> auth
+                            // Permitir acceso sin autenticación a endpoints públicos
+                            .requestMatchers("/api/auth/**", "/api/public/**", "/swagger-ui/**", "/v3/api-docs/**")
+                            .permitAll()
+                            .anyRequest().authenticated()
+                    );
 
-        return http.build();
+            return http.build();
+        } catch (Exception e) {
+            throw new IllegalStateException("Error al configurar la seguridad HTTP", e);
+        }
     }
 
+    /**
+     * Configura la fuente de configuración CORS.
+     *
+     * @return configuración CORS para toda la API
+     */
     @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
+    public CorsConfigurationSource corsConfigurationSource() {
+        final CorsConfiguration configuration = new CorsConfiguration();
+
         // Define los orígenes permitidos (frontend local y desplegado)
-        // ¡¡IMPORTANTE!! Reemplaza "TU_FRONTEND_URL_VERCEL.vercel.app" con tu URL real de Vercel
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
                 "https://TU_FRONTEND_URL_VERCEL.vercel.app"
         ));
-        // métodos HTTP permitidos
+
+        // Métodos HTTP permitidos
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        // Permite todas las cabeceras comunes
+
+        // Permitir todas las cabeceras comunes
         configuration.setAllowedHeaders(List.of("*"));
-        // Permite el envío de credenciales (cookies, encabezados de autorización)
+
+        // Permitir envío de credenciales
         configuration.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         // Aplica esta configuración a todos los endpoints bajo /api/
         source.registerCorsConfiguration("/api/**", configuration);
+
         return source;
     }
 }
