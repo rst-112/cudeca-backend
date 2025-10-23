@@ -1,8 +1,8 @@
-# Cudeca Frontend
+# Cudeca Backend
 
-![Frontend CI](https://github.com/rst-112/cudeca-frontend/actions/workflows/ci-frontend.yml/badge.svg)
+![Backend CI](https://github.com/rst-112/cudeca-backend/actions/workflows/ci-backend.yml/badge.svg)
 
-React + Vite frontend for Cudeca platform (ada sapitos)
+Spring Boot backend for Cudeca platform (ada sapitos)
 
 ### Related Repositories
 
