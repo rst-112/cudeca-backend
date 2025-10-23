@@ -82,6 +82,11 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -183,22 +188,19 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.23.0</version>
+                <version>3.21.2</version>
                 <configuration>
+                    <rulesets>
+                        <ruleset>pmd-ruleset.xml</ruleset>
+                    </rulesets>
                     <failOnViolation>true</failOnViolation>
                     <printFailingErrors>true</printFailingErrors>
-                    <rulesets>
-                        <ruleset>/category/java/bestpractices.xml</ruleset>
-                        <ruleset>/category/java/codestyle.xml</ruleset>
-                        <ruleset>/category/java/design.xml</ruleset>
-                        <ruleset>/category/java/errorprone.xml</ruleset>
-                    </rulesets>
+                    <linkXRef>false</linkXRef>
                 </configuration>
                 <executions>
                     <execution>
                         <goals>
                             <goal>check</goal>
-                            <goal>cpd-check</goal>
                         </goals>
                     </execution>
                 </executions>

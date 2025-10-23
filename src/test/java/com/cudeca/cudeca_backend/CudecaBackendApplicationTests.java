@@ -3,8 +3,10 @@ package com.cudeca.cudeca_backend;
 import com.cudeca.CudecaBackendApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.flyway.enabled=false")
+@ActiveProfiles("test")
 class CudecaBackendApplicationTests {
 
     @Test
@@ -13,6 +15,6 @@ class CudecaBackendApplicationTests {
 
     @Test
     void mainMethodRuns() {
-        CudecaBackendApplication.main(new String[] {});
+        CudecaBackendApplication.main(new String[]{});
     }
 }
