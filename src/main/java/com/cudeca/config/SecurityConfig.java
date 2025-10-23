@@ -31,22 +31,30 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) {
         try {
-            http
-                    // Configuración de CORS
-                    .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                    .csrf(AbstractHttpConfigurer::disable)
-                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                    .authorizeHttpRequests(auth -> auth
-                            // Permitir acceso sin autenticación a endpoints públicos
-                            .requestMatchers("/api/auth/**", "/api/public/**", "/swagger-ui/**", "/v3/api-docs/**")
-                            .permitAll()
-                            .anyRequest().authenticated()
-                    );
-
-            return http.build();
+            return buildHttpSecurity(http);
         } catch (Exception e) {
             throw new IllegalStateException("Error al configurar la seguridad HTTP", e);
         }
+    }
+
+    /**
+     * Aplica la configuración HTTP real. Separado para permitir testeo más granular.
+     *
+     * @param http configuración HTTP de Spring Security
+     * @return cadena de filtros configurada
+     * @throws Exception si ocurre un fallo al construir la configuración
+     */
+    SecurityFilterChain buildHttpSecurity(final HttpSecurity http) throws Exception {
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**", "/api/public/**", "/swagger-ui/**", "/v3/api-docs/**")
+                        .permitAll()
+                        .anyRequest().authenticated()
+                );
+        return http.build();
     }
 
     /**
@@ -58,25 +66,17 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         final CorsConfiguration configuration = new CorsConfiguration();
 
-        // Define los orígenes permitidos (frontend local y desplegado)
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:5173",
-                "https://TU_FRONTEND_URL_VERCEL.vercel.app"
+                "https://cudeca-frontend.vercel.app"
         ));
 
-        // Métodos HTTP permitidos
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-
-        // Permitir todas las cabeceras comunes
         configuration.setAllowedHeaders(List.of("*"));
-
-        // Permitir envío de credenciales
         configuration.setAllowCredentials(true);
 
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Aplica esta configuración a todos los endpoints bajo /api/
         source.registerCorsConfiguration("/api/**", configuration);
-
         return source;
     }
 }
