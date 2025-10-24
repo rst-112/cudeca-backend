@@ -21,8 +21,5 @@ COPY src src
 # Compila y empaqueta el proyecto (sin tests)
 RUN ./mvnw clean package -DskipTests
 
-# Expone el puerto (Render usará uno dinámico)
-EXPOSE 8080
-
 # Define el comando de arranque
 CMD ["java", "-jar", "target/cudeca-backend-0.0.1-SNAPSHOT.jar"]
