@@ -25,7 +25,9 @@ jobs:
         run: chmod +x mvnw
 
       - name: Run Checks, Tests, and Coverage (test profile)
-        run: ./mvnw -B verify -Dspring.profiles.active=test
+        run: ./mvnw -B verify -Ptest -Dspring.profiles.active=test -Dstyle.color=always
+        env:
+          SPRING_PROFILES_ACTIVE: test
 
       - name: Upload quality reports
         if: always()
