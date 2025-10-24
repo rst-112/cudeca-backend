@@ -1,5 +1,8 @@
 package com.cudeca.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -22,17 +25,18 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    /**
-     * Configura la cadena de filtros de seguridad para HTTP.
-     *
-     * @param http configuración de seguridad HTTP
-     * @return el SecurityFilterChain construido
-     */
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
+
+    @Value("${spring.profiles.active:dev}")
+    private String activeProfile;
+
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) {
         try {
+            log.info("Inicializando configuración de seguridad HTTP para el perfil: {}", activeProfile);
             return buildHttpSecurity(http);
         } catch (Exception e) {
+            log.error("Error al configurar la seguridad HTTP", e);
             throw new IllegalStateException("Error al configurar la seguridad HTTP", e);
         }
     }
@@ -45,23 +49,20 @@ public class SecurityConfig {
      * @throws Exception si ocurre un fallo al construir la configuración
      */
     SecurityFilterChain buildHttpSecurity(final HttpSecurity http) throws Exception {
+        log.debug("Aplicando políticas de seguridad...");
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/public/**", "/swagger-ui/**", "/v3/api-docs/**")
+                        .requestMatchers("/api/auth/**", "/api/public/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                         .permitAll()
                         .anyRequest().authenticated()
                 );
+        log.debug("Seguridad HTTP configurada correctamente");
         return http.build();
     }
 
-    /**
-     * Configura la fuente de configuración CORS.
-     *
-     * @return configuración CORS para toda la API
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         final CorsConfiguration configuration = new CorsConfiguration();
@@ -74,6 +75,8 @@ public class SecurityConfig {
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
+
+        log.debug("Configurando CORS: origins={} methods={}", configuration.getAllowedOrigins(), configuration.getAllowedMethods());
 
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", configuration);

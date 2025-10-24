@@ -1,11 +1,15 @@
 package com.cudeca;
 
+import com.cudeca.config.MailConfigTest;
+import com.cudeca.testutil.IntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.annotation.Import;
 
-@SpringBootTest(properties = "spring.flyway.enabled=false")
-@ActiveProfiles("test")
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
+@Import(MailConfigTest.class)
+@IntegrationTest
 class CudecaBackendApplicationTests {
 
     @Test
@@ -14,6 +18,11 @@ class CudecaBackendApplicationTests {
 
     @Test
     void mainMethodRuns() {
-        CudecaBackendApplication.main(new String[]{});
+        assertDoesNotThrow(() ->
+                SpringApplication
+                        .from(CudecaBackendApplication::main)
+                        .with(MailConfigTest.class)
+                        .run("--spring.profiles.active=test")
+        );
     }
 }
