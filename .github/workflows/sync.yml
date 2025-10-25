@@ -17,7 +17,11 @@ jobs:
         env:
           PAT: ${{ secrets.CUDECA_SYNC_PAT_2025 }}
         run: |
+          REPO_NAME=$(basename "$GITHUB_REPOSITORY")
+          PERSONAL_REPO="rst-112/${REPO_NAME}"
           echo "Token recibido tiene longitud: ${#PAT}"
+          echo "URL deploy: https://rst-112:${PAT}@github.com/rst-112/${PERSONAL_REPO}".git"
+          
 
       - name: Verify access and push to personal repo
         env:
