@@ -31,7 +31,7 @@ jobs:
           PERSONAL_REPO="rst-112/${REPO_NAME}"
 
           echo "Verificando acceso a https://github.com/${PERSONAL_REPO}.git ..."
-          if git ls-remote https://rst-112:${PAT}@github.com/${PERSONAL_REPO}.git &>/dev/null; then
+          if git ls-remote https://rst-112:${PAT}@github.com/${PERSONAL_REPO} &>/dev/null; then
             echo "Conexión verificada con éxito."
           else
             echo "Error: no se pudo acceder al repositorio personal ${PERSONAL_REPO}."
