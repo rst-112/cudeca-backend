@@ -1,49 +1,51 @@
-name: Sync to Personal Deployment Repos (main & dev)
+name: 🔄 Sync cudeca-org → rst-112 (main & dev)
 
 on:
   push:
-    branches: [main, dev]
+    branches:
+      - main
+      - dev
+  workflow_dispatch:  # Permite lanzarlo manualmente desde GitHub Actions
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read  # Solo necesita leer el repo origen
 
     steps:
-      - uses: actions/checkout@v4
+      # 1️⃣ Clonar el repo completo (con historial y todas las ramas)
+      - name: 🧩 Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # necesario para tener todo el historial
 
-      - name: Debug token
-        env:
-          PAT: ${{ secrets.CUDECA_SYNC_PAT_2025 }}
+      # 2️⃣ Configurar usuario de git para los commits/pushes automáticos
+      - name: 🧰 Configure Git
         run: |
-          echo "Token recibido tiene longitud: ${#PAT}"
-
-      - name: Verify access and push to personal repo
-        env:
-          PAT: ${{ secrets.CUDECA_SYNC_PAT_2025 }}
-        run: |
-          set -e
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions@users.noreply.github.com"
 
+      # 3️⃣ Añadir el remoto de destino (tu repo personal)
+      - name: 🔗 Add personal remote
+        env:
+          PAT: ${{ secrets.SYNC_TO_PERSONAL_PAT }}
+        run: |
           REPO_NAME=$(basename "$GITHUB_REPOSITORY")
-          PERSONAL_REPO="rst-112/${REPO_NAME}"
+          DEST_REPO="rst-112/${REPO_NAME}"
+          echo "➡️  Añadiendo remoto: https://github.com/${DEST_REPO}.git"
+          git remote add personal https://rst-112:${PAT}@github.com/${DEST_REPO}.git
+          git remote -v
 
-          echo "URL deploy: https://rst-112:${PAT}@github.com/rst-112/${PERSONAL_REPO}.git"
-          echo "Verificando acceso a https://github.com/${PERSONAL_REPO}.git ..."
-          if git ls-remote https://rst-112:${PAT}@github.com/${PERSONAL_REPO} &>/dev/null; then
-            echo "Conexión verificada con éxito."
-          else
-            echo "Error: no se pudo acceder al repositorio personal ${PERSONAL_REPO}."
-            exit 1
-          fi
+      # 4️⃣ Hacer push forzado de main y dev hacia tu repo personal
+      - name: 🚀 Push branches to personal repo
+        env:
+          PAT: ${{ secrets.SYNC_TO_PERSONAL_PAT }}
+        run: |
+          echo "🔄 Sincronizando rama main..."
+          git push personal main:main --force
 
-          git remote remove deploy 2>/dev/null || true
-          git remote add deploy https://rst-112:${PAT}@github.com/${PERSONAL_REPO}.git
+          echo "🔄 Sincronizando rama dev..."
+          git push personal dev:dev --force
 
-          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          echo "Sincronizando rama ${CURRENT_BRANCH} con ${PERSONAL_REPO}..."
-          git push deploy ${CURRENT_BRANCH}:${CURRENT_BRANCH} --force
-
-          echo "Sincronización finalizada correctamente."
+          echo "✅ Sincronización completada correctamente con rst-112/cudeca-backend"
