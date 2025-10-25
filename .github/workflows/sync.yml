@@ -14,12 +14,14 @@ jobs:
           fetch-depth: 0
 
       - name: Debug token
+        env:
+          PAT: ${{ secrets.CUDECA_SYNC_TOKEN_2025 }}
         run: |
           echo "Token recibido tiene longitud: ${#PAT}"
 
       - name: Verify access and push to personal repo
         env:
-          PAT: ${{ secrets.CUDECA_Sync_Token_2025 }}
+          PAT: ${{ secrets.CUDECA_SYNC_TOKEN_2025 }}
         run: |
           set -e
           git config --global user.name "github-actions[bot]"
