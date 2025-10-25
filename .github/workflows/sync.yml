@@ -13,6 +13,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Debug token
+        run: |
+          echo "Token recibido tiene longitud: ${#PAT}"
+
       - name: Verify access and push to personal repo
         env:
           PAT: ${{ secrets.CUDECA_Sync_Token_2025 }}
