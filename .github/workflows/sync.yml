@@ -7,24 +7,36 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Push to personal repo (rst-112)
+      - name: Verify access and push to personal repo
         env:
           PAT: ${{ secrets.CUDECA_Sync_Token_2025 }}
         run: |
+          set -e
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions@users.noreply.github.com"
 
           REPO_NAME=$(basename "$GITHUB_REPOSITORY")
-          git remote add deploy https://rst-112:${PAT}@github.com/rst-112/${REPO_NAME}.git
+          PERSONAL_REPO="rst-112/${REPO_NAME}"
+
+          echo "Verificando acceso a https://github.com/${PERSONAL_REPO}.git ..."
+          if git ls-remote https://rst-112:${PAT}@github.com/${PERSONAL_REPO}.git &>/dev/null; then
+            echo "Conexión verificada con éxito."
+          else
+            echo "Error: no se pudo acceder al repositorio personal ${PERSONAL_REPO}."
+            exit 1
+          fi
+
+          git remote remove deploy 2>/dev/null || true
+          git remote add deploy https://rst-112:${PAT}@github.com/${PERSONAL_REPO}.git
 
           CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          echo "Sincronizando rama ${CURRENT_BRANCH} con rst-112/${REPO_NAME}..."
+          echo "Sincronizando rama ${CURRENT_BRANCH} con ${PERSONAL_REPO}..."
           git push deploy ${CURRENT_BRANCH}:${CURRENT_BRANCH} --force
 
-      - name: Confirm sync success
-        run: echo "Código sincronizado correctamente"
+          echo "Sincronización finalizada correctamente."
