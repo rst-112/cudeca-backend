@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: cudeca_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: cudeca_db
+      POSTGRES_USER: cudeca_user
+      POSTGRES_PASSWORD: password_seguro
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: cudeca_mailhog
+    restart: always
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  postgres_data:
