@@ -1,4 +1,4 @@
-package com.cudeca.service;
+package com.cudeca.service.impl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,15 +13,15 @@ import static org.mockito.Mockito.*;
  * Test unitario del servicio EmailService.
  * Verifica que los correos se construyen y envían correctamente.
  */
-class EmailServiceTest {
+class EmailServiceImplTest {
 
     private JavaMailSender mailSender;
-    private EmailService emailService;
+    private EmailServiceImpl emailServiceImpl;
 
     @BeforeEach
     void setUp() {
         mailSender = mock(JavaMailSender.class);
-        emailService = new EmailService(mailSender);
+        emailServiceImpl = new EmailServiceImpl(mailSender);
     }
 
     @Test
@@ -30,7 +30,7 @@ class EmailServiceTest {
         String destinatario = "test@cudeca.org";
 
         // Act
-        emailService.sendTestEmail(destinatario);
+        emailServiceImpl.sendTestEmail(destinatario);
 
         // Assert
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
@@ -48,7 +48,7 @@ class EmailServiceTest {
         doNothing().when(mailSender).send(any(SimpleMailMessage.class));
 
         // Act & Assert
-        emailService.sendTestEmail("user@example.com");
+        emailServiceImpl.sendTestEmail("user@example.com");
 
         verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }

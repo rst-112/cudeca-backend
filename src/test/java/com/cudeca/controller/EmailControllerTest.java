@@ -1,6 +1,6 @@
 package com.cudeca.controller;
 
-import com.cudeca.service.EmailService;
+import com.cudeca.service.impl.EmailServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,13 +15,13 @@ import static org.mockito.Mockito.*;
  */
 class EmailControllerTest {
 
-    private EmailService emailService;
+    private EmailServiceImpl emailServiceImpl;
     private EmailController controller;
 
     @BeforeEach
     void setUp() {
-        emailService = mock(EmailService.class);
-        controller = new EmailController(emailService);
+        emailServiceImpl = mock(EmailServiceImpl.class);
+        controller = new EmailController(emailServiceImpl);
     }
 
     @Test
@@ -33,7 +33,7 @@ class EmailControllerTest {
         Map<String, String> response = controller.sendTestEmail(destinatario);
 
         // Assert
-        verify(emailService, times(1)).sendTestEmail(destinatario);
+        verify(emailServiceImpl, times(1)).sendTestEmail(destinatario);
         assertThat(response)
                 .containsEntry("status", "ok")
                 .containsEntry("message", "Correo de prueba enviado a " + destinatario);
@@ -45,7 +45,7 @@ class EmailControllerTest {
         Map<String, String> response = controller.sendTestEmail("test@example.com");
 
         // Assert
-        verify(emailService, times(1)).sendTestEmail("test@example.com");
+        verify(emailServiceImpl, times(1)).sendTestEmail("test@example.com");
         assertThat(response.get("status")).isEqualTo("ok");
     }
 }
