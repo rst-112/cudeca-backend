@@ -1,11 +1,11 @@
 package com.cudeca.model.evento;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.cudeca.model.evento.enums.EstadoAsiento;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Entity
 @Getter
@@ -17,8 +17,21 @@ public class Asiento {
     private String codigoEtiqueta;
     private Integer fila;
     private Integer columna;
-    //@Enumerated(EnumType.STRING)
-    //private EstadoAsiento estado;
+    @Enumerated(EnumType.STRING)
+    private EstadoAsiento estado;
+
+    //relaciones
+
+    @ManyToOne
+    private ZonaRecinto zonaRecinto;
 
     //hacer metodos
+
+    public void reservar(){
+        this.estado = EstadoAsiento.RESERVADO;
+    }
+
+    public void liberar(){
+        this.estado = EstadoAsiento.DISPONIBLE;
+    }
 }
