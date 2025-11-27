@@ -1,8 +1,11 @@
 package com.cudeca.model.evento;
 
 import com.cudeca.enums.EstadoAsiento;
+import com.cudeca.model.negocio.ArticuloEntrada;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.List;
 
 @Entity
 @Data
@@ -22,6 +25,12 @@ public class Asiento {
 
     @ManyToOne
     private ZonaRecinto zonaRecinto;
+
+    @ManyToOne
+    private TipoEntrada tipoEntradaAsignada;
+
+    @ManyToMany(mappedBy = "asientos")
+    private List<ArticuloEntrada> articulosEntrada;
 
     //hacer metodos
 

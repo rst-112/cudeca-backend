@@ -25,6 +25,15 @@ public class TipoEntrada {
     @ManyToOne
     private Evento eventoAsociado;
 
+    @OneToMany(mappedBy = "tipoEntradaAsignada")
+    private List<Asiento> asientosAsignados;
+
+    @OneToMany(mappedBy = "tipoEntrada")
+    private List<TipoEntrada> ArticulosEntradas;
+
+
+
+
     //crear metodos
 
     public BigDecimal getPrecioTotal() {

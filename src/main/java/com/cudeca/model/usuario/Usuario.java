@@ -70,6 +70,8 @@ public abstract class Usuario {
     @ToString.Exclude
     private Set<VerificacionCuenta> verificaciones = new HashSet<>();
 
+    @OneToMany(mappedBy = "usuario")
+    private Set<Auditoria> auditorias = new HashSet<>(); //Por que es un Set?
     // --- MÉTODOS DE NEGOCIO (Del Diagrama UML) ---
 
     /**
