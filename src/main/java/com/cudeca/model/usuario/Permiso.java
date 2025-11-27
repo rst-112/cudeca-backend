@@ -1,44 +1,38 @@
 package com.cudeca.model.usuario;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-import java.util.Objects;
-
-@Setter
-@Getter
 @Entity
-@Table(name = "PERMISOS")
+@Table(name = "PERMISOS") // Nombre exacto según el DDL (Línea 92 del PDF)
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Permiso {
 
-    // Getters y Setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Según DDL: codigo VARCHAR(120) NOT NULL UNIQUE
     @Column(nullable = false, unique = true, length = 120)
-    private String codigo; // Ej: "EVENTO_READ", "USER_WRITE"
+    private String codigo; // Ej: "EVENTO_READ", "USUARIO_WRITE"
 
-    // Constructor vacío obligatorio
-    public Permiso() {}
+    /*
+     * NOTA TÉCNICA SOBRE RELACIÓN INVERSA:
+     * No es estrictamente necesario mapear la lista de Roles aquí ("mappedBy")
+     * a menos que necesites preguntar: "¿Qué roles tienen el permiso X?".
+     * * Si lo necesitaras en el futuro, descomenta esto:
+     * * @ManyToMany(mappedBy = "permisos")
+     * @ToString.Exclude
+     * @EqualsAndHashCode.Exclude
+     * private Set<Rol> roles = new HashSet<>();
+     * * Por ahora, lo mantenemos simple (Unidireccional) para evitar complejidad.
+     */
+    /*
+    UsuarioRol.java: EXISTE (porque tiene fecha).
 
-    // Constructor útil
-    public Permiso(String codigo) {
-        this.codigo = codigo;
-    }
-
-    // HashCode y Equals son vitales en Sets
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Permiso permiso = (Permiso) o;
-        return Objects.equals(codigo, permiso.codigo);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(codigo);
-    }
+RolPermiso.java: NO EXISTE (es una relación @ManyToMany pura gestionada dentro de Rol).
+     */
 }

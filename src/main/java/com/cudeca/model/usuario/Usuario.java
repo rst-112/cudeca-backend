@@ -1,86 +1,98 @@
 package com.cudeca.model.usuario;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDateTime;
-
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
-@Getter
 @Entity
 @Table(name = "USUARIOS")
-public class Usuario {
+@Data                   // Genera Getters, Setters, toString, equals, hashCode
+@NoArgsConstructor      // Constructor vacío (Obligatorio JPA)
+@AllArgsConstructor     // Constructor con todo (Para el Builder)
+//No Builder
+@SuperBuilder// <--- CAMBIO CLAVE: Permite que el hijo herede el builder del padre               // Patrón Builder para crear objetos limpios
+public abstract class Usuario {
 
-    // Getters y Setters
-    @Setter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Setter
     @Column(nullable = false, length = 100)
     private String nombre;
 
-    @Setter
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
-    @Setter
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Setter
     private String direccion;
 
+    // Uso de Instant (UTC) como vimos en tu tabla de fechas
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
-    // --- AQUÍ ESTÁ LA RELACIÓN QUE PIDE EL CHECKLIST ---
-    @Setter
+    // Relación con Roles (Tabla USUARIOS_ROLES del PDF pág. 48)
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "USUARIOS_ROLES",                  // Nombre de la tabla intermedia en BBDD
-            joinColumns = @JoinColumn(name = "usuario_id"), // FK hacia Usuario
-            inverseJoinColumns = @JoinColumn(name = "rol_id") // FK hacia Rol
+            name = "USUARIOS_ROLES",
+            joinColumns = @JoinColumn(name = "usuario_id"),
+            inverseJoinColumns = @JoinColumn(name = "rol_id")
     )
+    @Builder.Default // Asegura que el Set no sea null al usar el Builder
+    @ToString.Exclude // Evita bucles infinitos en los logs
+    @EqualsAndHashCode.Exclude
     private Set<Rol> roles = new HashSet<>();
-    // ---------------------------------------------------
 
-    // Constructor vacío obligatorio para JPA
-    public Usuario() {}
+    // --- MÉTODOS DEL CICLO DE VIDA (PrePersist/PreUpdate) ---
 
-    // Constructor útil
-    public Usuario(String nombre, String email, String passwordHash) {
-        this.nombre = nombre;
-        this.email = email;
-        this.passwordHash = passwordHash;
-    }
-
-    // Métodos del ciclo de vida para las fechas
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = Instant.now();
+        this.updatedAt = Instant.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = Instant.now();
     }
 
-    // Métodos helper para gestionar la relación ManyToMany fácilmente
-    public void addRol(Rol rol) {
-        this.roles.add(rol);
+    // Añadir si quieres ver el historial de tokens de un usuario:
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    private Set<VerificacionCuenta> verificaciones = new HashSet<>();
+
+    // --- MÉTODOS DE NEGOCIO (Del Diagrama UML) ---
+
+    /**
+     * Diagrama: actualizarPerfil(): void
+     * Implementación: Actualiza los datos permitidos y refresca la fecha.
+     */
+    public void actualizarPerfil(String nuevoNombre, String nuevaDireccion) {
+        if (nuevoNombre != null && !nuevoNombre.isBlank()) {
+            this.nombre = nuevoNombre;
+        }
+        if (nuevaDireccion != null) {
+            this.direccion = nuevaDireccion;
+        }
+        // El @PreUpdate actualizará el 'updatedAt' automáticamente al guardar
     }
 
-    public void removeRol(Rol rol) {
-        this.roles.remove(rol);
-    }
-
+    /*
+     * NOTA ARQUITECTÓNICA SOBRE: registrarse() e iniciarSesion()
+     * * En Spring Boot, estos métodos NO se implementan aquí dentro.
+     * La entidad Usuario solo representa DATOS.
+     * * - registrarse() -> Se implementa en AuthService.register(DTO)
+     * - iniciarSesion() -> Se implementa en AuthService.login(DTO)
+     * * Poner lógica de autenticación aquí rompería el principio de
+     * responsabilidad única y haría imposible inyectar Repositorios.
+     */
 }

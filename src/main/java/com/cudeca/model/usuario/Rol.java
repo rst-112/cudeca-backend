@@ -1,63 +1,56 @@
 package com.cudeca.model.usuario;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
+import lombok.*;
 import java.util.HashSet;
-import java.util.Objects;
 import java.util.Set;
 
-@Setter
-@Getter
 @Entity
-@Table(name = "ROLES")
+@Table(name = "ROLES") // Nombre exacto del DDL
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Rol {
 
-    // Getters y Setters
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // DDL: nombre VARCHAR(80) NOT NULL UNIQUE
     @Column(nullable = false, unique = true, length = 80)
-    private String nombre; // Ej: "ADMIN", "DONANTE"
+    private String nombre; // Ej: "ADMIN", "SOCIO", "STAFF"
 
-    // --- RELACIÓN CON PERMISOS (El equivalente a la clase 'RolPermiso' del diagrama) ---
-    @ManyToMany(fetch = FetchType.EAGER)
+    // --- RELACIÓN CON PERMISOS (ManyToMany Puro) ---
+    // Al no tener datos extra (fecha, etc), JPA lo maneja solo con esta anotación.
+
+    @ManyToMany(fetch = FetchType.EAGER) // EAGER: Al cargar el Rol, trae sus permisos inmediatamente (vital para Seguridad)
     @JoinTable(
-            name = "ROLES_PERMISOS",                  // Nombre de la tabla SQL
-            joinColumns = @JoinColumn(name = "rol_id"), // Tu ID en la tabla intermedia
-            inverseJoinColumns = @JoinColumn(name = "permiso_id") // El ID del otro lado
+            name = "ROLES_PERMISOS",                  // Tabla intermedia del SQL
+            joinColumns = @JoinColumn(name = "rol_id"), // Mi ID
+            inverseJoinColumns = @JoinColumn(name = "permiso_id") // El ID del otro
     )
+    @Builder.Default // Para que el Builder inicie el HashSet vacío en vez de null
+    @ToString.Exclude // Evita bucles infinitos
+    @EqualsAndHashCode.Exclude
     private Set<Permiso> permisos = new HashSet<>();
-    // -----------------------------------------------------------------------------------
 
-    // Constructor vacío
-    public Rol() {}
+    // --- RELACIÓN INVERSA CON USUARIO_ROL (Opcional pero recomendada) ---
+    // Esto permite saber "quiénes tienen este rol" consultando desde el objeto Rol.
 
-    public Rol(String nombre) {
-        this.nombre = nombre;
-    }
+    @OneToMany(mappedBy = "rol", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<UsuarioRol> asignaciones = new HashSet<>();
 
-    // Métodos Helper (Buenas prácticas para añadir/quitar)
+    // --- MÉTODOS HELPER (Para gestión limpia) ---
+
     public void addPermiso(Permiso permiso) {
         this.permisos.add(permiso);
     }
 
     public void removePermiso(Permiso permiso) {
         this.permisos.remove(permiso);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Rol rol = (Rol) o;
-        return Objects.equals(nombre, rol.nombre);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(nombre);
     }
 }
