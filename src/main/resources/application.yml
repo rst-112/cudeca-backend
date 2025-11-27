@@ -110,5 +110,13 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"
 
+application:
+  security:
+    jwt:
+      # Genera una clave segura de al menos 256 bits (ej. 32 caracteres) y codifícala en Base64
+      # Ejemplo: "482d4f25e8a5b29f7c0d1e3a6b5c4d3e2f1g0h9i8j7k6l5m4n3o2p1q0r9s8t7u" (MUCHO MÁS LARGA)
+      secret-key: B4-CLAVE-SECRETA-SUPER-LARGA-Y-COMPLEJA-DE-SAPOSOFT
+      expiration: 86400000 # 24 horas en milisegundos
+
 server:
   port: ${PORT:8080}
