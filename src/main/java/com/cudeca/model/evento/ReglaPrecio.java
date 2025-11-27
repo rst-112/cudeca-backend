@@ -1,16 +1,15 @@
 package com.cudeca.model.evento;
 
-import com.cudeca.model.evento.enums.TipoAjusteRegla;
+import com.cudeca.enums.TipoAjusteRegla;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Entity
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReglaPrecio {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,6 +21,8 @@ public class ReglaPrecio {
     private boolean requiereSuscricion;
 
     //relaciones
+    @ManyToOne
+    private Evento evento;
 
     //crear metodos
 

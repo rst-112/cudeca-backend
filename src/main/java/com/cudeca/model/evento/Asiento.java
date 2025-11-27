@@ -1,15 +1,13 @@
 package com.cudeca.model.evento;
 
-import com.cudeca.model.evento.enums.EstadoAsiento;
+import com.cudeca.enums.EstadoAsiento;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.List;
+import lombok.*;
 
 @Entity
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Asiento {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,17 +1,17 @@
 package com.cudeca.model.evento;
 
-import com.cudeca.model.evento.enums.EstadoEvento;
+import com.cudeca.enums.EstadoEvento;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.List;
 
 @Entity
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Evento {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,9 +19,9 @@ public class Evento {
     private String nombre;
     private String descripcion;
     @Temporal(TemporalType.DATE) //cambiar a el que se eliga al final
-    private Date fechaInicio;
+    private LocalDate fechaInicio;
     @Temporal(TemporalType.DATE)
-    private Date fechaFin;
+    private LocalDate fechaFin;
     private String lugar;
     @Enumerated(EnumType.STRING)
     private EstadoEvento estado;
@@ -32,6 +32,15 @@ public class Evento {
 
     @OneToMany(mappedBy = "eventoAsociado")
     private List<TipoEntrada> tiposDeEntradas;
+
+    @OneToMany(mappedBy = "evento")
+    private List<ReglaPrecio> reglasDePrecios;
+
+    @OneToMany(mappedBy = "eventoAsociadoAZonaRecinto")
+    private List<ZonaRecinto> zonasRecinto;
+
+    @OneToMany(mappedBy = "eventoAsociadoAImagenes")
+    private List<ImagenEvento> imagenesEvento;
 
 
 

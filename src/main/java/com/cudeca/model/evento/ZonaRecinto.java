@@ -1,15 +1,15 @@
 package com.cudeca.model.evento;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ZonaRecinto {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,6 +18,9 @@ public class ZonaRecinto {
     private Integer aforoTotal;
 
     //relaciones
+
+    @ManyToOne
+    private Evento eventoAsociadoAZonaRecinto;
 
     @OneToMany(mappedBy = "zonaRecinto")
     private List<Asiento> asientos;
