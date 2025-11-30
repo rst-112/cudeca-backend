@@ -1,104 +1,80 @@
 package com.cudeca.service.impl;
 
-// Importaciones de DTOs y Servicios
-import com.cudeca.dto.AuthResponse;
-import com.cudeca.dto.LoginRequest;
-import com.cudeca.dto.RegisterRequest;
-import com.cudeca.service.JwtService;
-import com.cudeca.model.aux.EmailValidator
-
-// Importaciones de la entidad (temporal, hasta que B3 la provea)
-import com.cudeca.model.security.Usuario;
-import com.cudeca.repository.UsuarioRepository; // Repositorio de B3
-
-// Importaciones de Spring Security
+import com.cudeca.dto.usuario.AuthResponse;
+import com.cudeca.dto.usuario.LoginRequest;
+import com.cudeca.dto.usuario.RegisterRequest;
+import com.cudeca.model.usuario.Usuario;
+import com.cudeca.repository.UsuarioRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+/**
+ * Servicio encargado de la lógica de negocio para la autenticación y registro de usuarios.
+ * Orquesta la seguridad (PasswordEncoder, AuthenticationManager) y la generación de tokens (JwtService).
+ */
 @Service
+@RequiredArgsConstructor
 public class AuthServiceImpl {
 
-    private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
     private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtServiceImpl jwtService;
+    private final AuthenticationManager authenticationManager;
 
-    // Constructor (inyección de dependencias)
-    public AuthServiceImpl(AuthenticationManager authenticationManager, JwtService jwtService, UsuarioRepository usuarioRepository) {
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
-        this.usuarioRepository = usuarioRepository;
-    }
-
-    // El método de Login
-    public AuthResponse login(LoginRequest request) {
-
-        // 1. Verificación de Credenciales (DS 8, pasos 2-8)
-        // Intentamos autenticar. Si falla (credenciales inválidas), el AuthenticationManager
-        // lanzará una excepción (AuthenticationException).
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
-
-        // Si la línea anterior no lanza excepción, la autenticación fue exitosa.
-
-        // 2. Recuperar la Entidad Usuario
-        // Necesitas la entidad completa (Usuario) para obtener el ID, ya que el token JWT
-        // debe incluir el 'userId' como claim.
-        Usuario usuario = usuarioRepository.findByEmail(request.getEmail())
-                // Si el usuario no existe tras la autenticación, es un error del sistema.
-                .orElseThrow(() -> new RuntimeException("Error interno: Usuario autenticado no encontrado en DB."));
-
-        // 3. Generación del Token JWT (DS 8, paso 9)
-        // Usamos tu JwtService para crear el token firmado.
-        String jwtToken = jwtService.generateToken(usuario);
-
-        // 4. Retorno de la Respuesta (DS 8, pasos 10-12)
-        return new AuthResponse(jwtToken);
-    }
-    // El método de Registro
+    /**
+     * Registra un nuevo usuario en el sistema.
+     * Cifra la contraseña y genera un token JWT inicial.
+     *
+     * @param request DTO con los datos del registro (nombre, email, password).
+     * @return AuthResponse con el token JWT generado.
+     */
     public AuthResponse register(RegisterRequest request) {
 
-        // 1. VERIFICACIÓN DE UNICIDAD DEL EMAIL (Regla de Negocio)
-        // Se debe verificar que el email no esté ya en uso, ya que es un campo UNIQUE en la DB.
-        if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
-            // Se lanza una excepción que será manejada por el Controller (ej. devolver 400 Bad Request).
-            throw new RuntimeException("El email ya está registrado en el sistema.");
-        }
-        if (EmailValidator.isEmailValid(request.getEmail())) {
-            // Se lanza una excepción que será manejada por el Controller (ej. devolver 400 Bad Request).
-            throw new RuntimeException("El email no tiene un formato válido");
-        }
-
-        // 2. CREACIÓN DE LA ENTIDAD USUARIO (Trabajo de B3)
+        // 1. Creación de la entidad Usuario
         Usuario nuevoUsuario = new Usuario();
-
         nuevoUsuario.setNombre(request.getNombre());
         nuevoUsuario.setEmail(request.getEmail());
 
-        // 3. CIFRADO DE LA CONTRASEÑA (Seguridad)
-        // Usamos el PasswordEncoder para hashear la contraseña ANTES de guardarla.
-        String passwordHash = passwordEncoder.encode(request.getPassword());
-        nuevoUsuario.setPasswordHash(passwordHash);
+        // 2. Seguridad: Cifrado de contraseña
+        // IMPORTANTE: Nunca guardamos la contraseña en texto plano.
+        // Usamos BCrypt para generar el hash que se guardará en la columna 'password_hash'.
+        nuevoUsuario.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 
-        // NOTA IMPORTANTE: Aquí se debería asignar el Rol por defecto (ej. "Comprador").
-        // nuevoUsuario.setRoles(asignarRolCompradorPorDefecto());
-
-        // 4. GUARDAR EL NUEVO USUARIO EN LA BASE DE DATOS (Persistencia)
+        // 3. Persistencia
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
 
-        // 5. GENERAR EL TOKEN JWT (Logueo Automático)
-        // Tras el registro, el usuario se loguea automáticamente y recibe su token.
+        // 4. Generación del Token (Auto-Login)
+        // Permitimos que el usuario entre directamente tras registrarse sin tener que loguearse de nuevo.
         String jwtToken = jwtService.generateToken(usuarioGuardado);
 
-        // 6. RETORNO DE LA RESPUESTA
-        return new AuthResponse(jwtToken, usuarioGuardado.getId());
+        return new AuthResponse(jwtToken);
     }
 
+    /**
+     * Autentica a un usuario existente.
+     *
+     * @param request DTO con las credenciales (email, password).
+     * @return AuthResponse con el token JWT si las credenciales son válidas.
+     */
+    public AuthResponse login(LoginRequest request) {
+        // 1. Delegamos la autenticación a Spring Security
+        // Si la contraseña no coincide o el usuario no existe, este método lanzará una excepción (BadCredentialsException).
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        );
 
+        // 2. Recuperamos el usuario completo de la BD
+        // Necesario para inyectar datos adicionales (como el ID o Roles) en el Token.
+        Usuario user = usuarioRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado tras autenticación: " + request.getEmail()));
+
+        // 3. Generamos el token firmado
+        String jwtToken = jwtService.generateToken(user);
+
+        return new AuthResponse(jwtToken);
+    }
 }

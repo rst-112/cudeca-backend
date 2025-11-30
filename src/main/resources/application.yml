@@ -1,40 +1,51 @@
 spring:
   profiles:
-    default: dev # Perfil por defecto
----
+    default: dev
 
+# ==========================================
+# CONFIGURACIÓN GLOBAL (Aplica a Dev y Prod)
+# ==========================================
+application:
+  security:
+    jwt:
+      # Clave secreta para firmar los tokens (Base64)
+      secret-key: rN8skz5ksunBA2xbiWLw7ir+wrBou6Zx8HppAlkJUh0=
+      expiration: 86400000 # 24 horas
+
+---
+# ==========================================
+# PERFIL DEV (Tu entorno local)
+# ==========================================
 spring:
   config:
     activate:
-      on-profile: dev # Configuración para el perfil 'dev'
+      on-profile: dev
 
   datasource:
-    # === ¡¡¡IMPORTANTE!!! Revisa que estos datos coincidan con tu BD local ===
     url: jdbc:postgresql://localhost:5432/cudeca_db
     username: cudeca_user
     password: password_seguro
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    # CAMBIO RECOMENDADO: Usa 'update' mientras desarrollas si B1 no ha terminado los scripts
     hibernate:
-      ddl-auto: validate # Valida que el esquema de BD coincida con las entidades JPA
-    show-sql: true # Muestra SQL en consola
+      ddl-auto: update
+    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    open-in-view: false
 
+  # Si no tienes scripts SQL de B1 todavía, pon enabled: false
   flyway:
-    enabled: true
+    enabled: false
     baseline-on-migrate: true
     locations: classpath:db/migration
 
   mail:
     host: localhost
     port: 1025
-    username: ""
-    password: ""
     properties:
       mail:
         smtp:
@@ -45,24 +56,17 @@ spring:
     swagger-ui:
       enabled: true
 
-logging:
-  level:
-    root: INFO
-    org.springframework: INFO
-    org.hibernate.SQL: DEBUG
-    com.cudeca: DEBUG
-  pattern:
-    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
-
 server:
-  port: ${SERVER_PORT:8080}
+  port: 8080
 
 ---
-
+# ==========================================
+# PERFIL PROD (Nube - Render/Neon)
+# ==========================================
 spring:
   config:
     activate:
-      on-profile: prod # Configuración para el perfil 'prod' (despliegue)
+      on-profile: prod
 
   datasource:
     url: ${SPRING_DATASOURCE_URL}
@@ -76,23 +80,11 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-    open-in-view: false
 
   flyway:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
-
-  mail:
-    host: localhost
-    port: 1025
-    username: ""
-    password: ""
-    properties:
-      mail:
-        smtp:
-          auth: false
-          starttls.enable: false
 
   springdoc:
     swagger-ui:
@@ -120,3 +112,4 @@ application:
 
 server:
   port: ${PORT:8080}
+
