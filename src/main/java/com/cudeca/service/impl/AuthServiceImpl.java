@@ -5,6 +5,8 @@ import com.cudeca.dto.usuario.LoginRequest;
 import com.cudeca.dto.usuario.RegisterRequest;
 import com.cudeca.model.usuario.Usuario;
 import com.cudeca.repository.UsuarioRepository;
+import com.cudeca.service.impl.ServiceExceptions.EmailAlreadyExistsException;
+import com.cudeca.service.impl.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,6 +26,7 @@ public class AuthServiceImpl {
     private final PasswordEncoder passwordEncoder;
     private final JwtServiceImpl jwtService;
     private final AuthenticationManager authenticationManager;
+    private final UserService userService;
 
     /**
      * Registra un nuevo usuario en el sistema.
@@ -37,7 +40,12 @@ public class AuthServiceImpl {
         // 1. Creación de la entidad Usuario
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setNombre(request.getNombre());
-        nuevoUsuario.setEmail(request.getEmail());
+        // Aqui pillamos el email y miramos que no exista
+        if(usuarioRepository.findByEmail(request.getEmail()).isEmpty()){
+            nuevoUsuario.setEmail(request.getEmail());
+        }else{
+            throw new EmailAlreadyExistsException(request.getEmail());
+        }
 
         // 2. Seguridad: Cifrado de contraseña
         // IMPORTANTE: Nunca guardamos la contraseña en texto plano.

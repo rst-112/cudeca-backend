@@ -4,6 +4,7 @@ import com.cudeca.dto.usuario.AuthResponse;
 import com.cudeca.dto.usuario.LoginRequest;
 import com.cudeca.dto.usuario.RegisterRequest;
 import com.cudeca.service.impl.AuthServiceImpl;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,8 +33,8 @@ public class AuthController {
      * @return 200 OK con el token JWT de la sesión iniciada.
      */
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
-        // Delega la lógica de negocio (cifrado, persistencia, token) al AuthService.
+    // ⚠️ CORRECCIÓN CLAVE: Añadir @Valid. Sin esto, las reglas del DTO se ignoran.
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
