@@ -3,6 +3,7 @@ package com.cudeca.model.negocio;
 import com.cudeca.enums.TipoDevolucion;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -60,19 +61,23 @@ public class Devolucion {
 
     // --- CICLO DE VIDA ---
 
-    @PrePersist
+    @PrePersist // <--- ESTA ES LA ÚNICA VEZ QUE PUEDE APARECER '@PrePersist'
     public void prePersist() {
+        // 1. Asignar fecha si no existe
         if (this.fecha == null) {
             this.fecha = Instant.now();
         }
+        // 2. Llamar a la validación manualmente
+        validarConsistencia();
     }
 
-    // --- VALIDACIÓN DE NEGOCIO (Regla XOR del SQL) ---
-    // SQL: CONSTRAINT chk_devol_tipo CHECK (...)
-    // Validamos que si es MONEDERO tenga movimiento, y si es PASARELA tenga pago.
-    @PrePersist
-    @PreUpdate
-    public void validarConsistencia() {
+    @PreUpdate // Esta sí puede estar aquí
+    public void preUpdate() {
+        validarConsistencia();
+    }
+
+    // OJO: Este método NO debe tener ninguna anotación @Pre...
+    private void validarConsistencia() {
         if (tipo == TipoDevolucion.MONEDERO && movimientoMonedero == null) {
             throw new IllegalStateException("Una devolución a MONEDERO debe tener un Movimiento asociado.");
         }

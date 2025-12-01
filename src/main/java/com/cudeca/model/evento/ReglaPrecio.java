@@ -7,9 +7,11 @@ import lombok.*;
 import java.math.BigDecimal;
 
 @Entity
+@Table(name = "REGLAS_PRECIOS")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ReglaPrecio {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,10 +20,12 @@ public class ReglaPrecio {
     @Enumerated(EnumType.STRING)
     private TipoAjusteRegla tipoAjuste;
     private BigDecimal valor;
-    private boolean requiereSuscricion;
+    @Column(name = "requiere_suscripcion")
+    private boolean requiereSuscripcion;
 
-    //relaciones
     @ManyToOne
+    @JoinColumn(name = "evento_id") // Añadido por si acaso faltaba
+    @ToString.Exclude
     private Evento evento;
 
     //crear metodos

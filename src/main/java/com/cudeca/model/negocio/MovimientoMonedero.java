@@ -24,10 +24,8 @@ public class MovimientoMonedero {
     @ToString.Exclude
     private Monedero monedero;
 
-    // --- NUEVA CONEXIÓN AÑADIDA ---
-    // Relación inversa con Devolucion.
-    // Usamos "mappedBy" porque la FK (mov_monedero_id) está en la tabla DEVOLUCIONES.
-    @OneToMany(mappedBy = "movimientoMonedero", fetch = FetchType.LAZY)
+    // El error decía que tenías @OneToMany. ¡Debe ser @OneToOne!
+    @OneToOne(mappedBy = "movimientoMonedero", fetch = FetchType.LAZY)
     @ToString.Exclude
     private Devolucion devolucion;
 

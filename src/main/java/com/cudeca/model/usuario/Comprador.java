@@ -14,27 +14,26 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
+@DiscriminatorValue("COMPRADOR")
+// ¡OJO! AQUÍ NO DEBE HABER @Table(name="...")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder // Necesario para heredar los campos de Usuario (id, email...) en el builder
-@EqualsAndHashCode(callSuper = true) // Incluye los campos del padre en la comparación
-@DiscriminatorValue("COMPRADOR") // Valor que se guardará en la columna 'tipo_usuario'
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
 public class Comprador extends Usuario {
 
-    // --- RELACIONES ESPECÍFICAS DEL COMPRADOR ---
-
-    // Diagrama: monedero: Monedero (Relación 1 a 1)
-    // "mappedBy" significa que la clave foránea (usuario_id) está en la tabla MONEDEROS
-    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // --- RELACIÓN CORREGIDA ---
+    // mappedBy dice: "El dueño es el campo 'comprador' de la clase Monedero".
+    // NO pongas @JoinColumn aquí.
+    @OneToOne(mappedBy = "comprador", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude
     private Monedero monedero;
 
-    // Diagrama: posee 0..* SolicitudRetiro
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
     private Set<SolicitudRetiro> solicitudesRetiro = new HashSet<>();
-
     /* * PENDIENTE: Relación con Suscripción
      * @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
      * private Suscripcion suscripcion;

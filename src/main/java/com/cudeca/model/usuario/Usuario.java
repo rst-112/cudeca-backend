@@ -3,6 +3,7 @@ package com.cudeca.model.usuario;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.DiscriminatorFormula;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -10,11 +11,15 @@ import java.util.Set;
 
 @Entity
 @Table(name = "USUARIOS")
-@Data                   // Genera Getters, Setters, toString, equals, hashCode
-@NoArgsConstructor      // Constructor vacío (Obligatorio JPA)
-@AllArgsConstructor     // Constructor con todo (Para el Builder)
-//No Builder
-@SuperBuilder// <--- CAMBIO CLAVE: Permite que el hijo herede el builder del padre               // Patrón Builder para crear objetos limpios
+// --- CAMBIO IMPORTANTE AQUÍ ---
+// Usamos SINGLE_TABLE para que NO busque la tabla 'comprador'
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+// Define el nombre de la columna que distingue tipos (revisa si en tu SQL es 'tipo_usuario' o 'dtype')
+@DiscriminatorFormula("'COMPRADOR'")// ------------------------------
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 public abstract class Usuario {
 
     @Id
@@ -71,6 +76,7 @@ public abstract class Usuario {
     private Set<VerificacionCuenta> verificaciones = new HashSet<>();
 
     @OneToMany(mappedBy = "usuario")
+    @Builder.Default // <--- AÑADIR
     private Set<Auditoria> auditorias = new HashSet<>(); //Por que es un Set?
     // --- MÉTODOS DE NEGOCIO (Del Diagrama UML) ---
 

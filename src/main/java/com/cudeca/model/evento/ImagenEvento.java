@@ -1,14 +1,14 @@
 package com.cudeca.model.evento;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
+@Table(name = "IMAGENES_EVENTO") // <--- NOMBRE CORRECTO
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class ImagenEvento {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,6 +20,8 @@ public class ImagenEvento {
 
 
     //relaciones
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "evento_id") // <--- ¡AQUÍ ESTÁ LA CLAVE!
+    @ToString.Exclude
     private Evento eventoAsociadoAImagenes;
 }

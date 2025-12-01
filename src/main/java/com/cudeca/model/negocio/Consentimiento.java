@@ -2,6 +2,7 @@ package com.cudeca.model.negocio;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.Instant;
 
 @Entity

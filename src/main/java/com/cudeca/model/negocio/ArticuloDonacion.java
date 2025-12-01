@@ -16,6 +16,7 @@ public class ArticuloDonacion extends ArticuloCompra {
     // Diagrama: destino: String
     // Nota: Asegúrate de añadir la columna 'destino' a la tabla ITEMS_COMPRA en la BD
     // o esto fallará al arrancar.
-    @Column(name = "destino")
+    //@Column(name = "destino")
+    @Transient
     private String destino; // Ej: "Hospice", "Investigación"
 }

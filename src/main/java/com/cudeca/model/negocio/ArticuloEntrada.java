@@ -2,27 +2,34 @@ package com.cudeca.model.negocio;
 
 import com.cudeca.model.evento.Asiento;
 import com.cudeca.model.evento.TipoEntrada;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
+@Builder
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ArticuloEntrada {
-    @ManyToMany
-    private List<Asiento> asientos;
-    @ManyToOne
+@EqualsAndHashCode(callSuper = true)
+public class ArticuloEntrada extends ArticuloCompra{
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tipo_entrada_id")
+    @ToString.Exclude
     private TipoEntrada tipoEntrada;
-    @OneToMany(mappedBy = "articuloEntrada")
-    private List<EntradaEmitida> entradasEmitidas;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "asiento_id")
+    @ToString.Exclude
+    private Asiento asiento;
+
+    // --- CONEXIÓN CON ENTRADAS EMITIDAS (QRs) ---
+    @OneToMany(mappedBy = "articuloEntrada", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private List<EntradaEmitida> entradasEmitidas = new ArrayList<>();
 
 
 

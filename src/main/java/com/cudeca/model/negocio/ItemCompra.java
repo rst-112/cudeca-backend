@@ -2,8 +2,8 @@ package com.cudeca.model.negocio;
 
 
 // IMPORTANTE: Esta clase la crea B2. Cuando él la tenga, descomenta la siguiente línea:
-// import com.cudeca.model.evento.Asiento;
-// import com.cudeca.model.evento.TipoEntrada;
+ import com.cudeca.model.evento.Asiento;
+import com.cudeca.model.evento.TipoEntrada;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -31,7 +31,7 @@ public class ItemCompra {
     // B2 debe crear la clase 'Asiento' en el paquete 'com.cudeca.model.evento'
     // Descomenta estas líneas cuando B2 termine su parte:
 
-    /*
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "asiento_id")
     private Asiento asiento;
@@ -39,7 +39,6 @@ public class ItemCompra {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tipo_entrada_id")
     private TipoEntrada tipoEntrada;
-    */
 
     // --- CAMPOS DEL DIAGRAMA ---
 

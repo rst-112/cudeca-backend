@@ -19,7 +19,11 @@ public class Notificacion {
     private Long id;
 
     // --- CONEXIONES (Origen del evento) ---
-
+    // Relación con Usuario
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = true)
+    @ToString.Exclude
+    private Usuario usuario; // <--- ¡TIENE QUE LLAMARSE 'usuario'!
     // Relación con Compra (Opcional: ej. Email de Entradas)
     // SQL: compra_id BIGINT REFERENCES COMPRAS (nullable)
     @ManyToOne(fetch = FetchType.LAZY)

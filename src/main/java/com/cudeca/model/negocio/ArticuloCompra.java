@@ -1,6 +1,6 @@
 package com.cudeca.model.negocio;
 
-// import com.cudeca.model.negocio.AjustePrecio; // <-- DESCOMENTAR CUANDO TENGAS LA CLASE AJUSTEPRECIO
+import com.cudeca.model.negocio.AjustePrecio; // <-- DESCOMENTAR CUANDO TENGAS LA CLASE AJUSTEPRECIO
 
 import jakarta.persistence.*;
 import lombok.*;

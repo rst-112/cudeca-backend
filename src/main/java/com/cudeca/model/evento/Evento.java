@@ -5,11 +5,13 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
 @Entity
 @Data
+@Table(name = "EVENTOS")
 @NoArgsConstructor
 @AllArgsConstructor
 public class Evento {
@@ -18,10 +20,11 @@ public class Evento {
     private Long id;
     private String nombre;
     private String descripcion;
-    @Temporal(TemporalType.DATE) //cambiar a el que se eliga al final
-    private LocalDate fechaInicio;
-    @Temporal(TemporalType.DATE)
-    private LocalDate fechaFin;
+    @Column(name = "fecha_inicio", nullable = false)
+    private Instant fechaInicio;
+
+    @Column(name = "fecha_fin", nullable = false)
+    private Instant fechaFin; // Este es el que daba el error
     private String lugar;
     @Enumerated(EnumType.STRING)
     private EstadoEvento estado;
