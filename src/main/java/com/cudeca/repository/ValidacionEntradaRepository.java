@@ -24,8 +24,8 @@ public interface ValidacionEntradaRepository extends JpaRepository<ValidacionEnt
     List<ValidacionEntrada> findByEntradaEmitida_IdAndRevertidaFalse(Long entradaEmitidaId);
 
     /**
-     * Encuentra validaciones por usuario y rango de fechas.
+     * Encuentra validaciones por personal validador y rango de fechas.
      */
-    List<ValidacionEntrada> findByUsuario_IdAndFechaHoraBetween(Long usuarioId, Instant inicio, Instant fin);
+    List<ValidacionEntrada> findByPersonalValidador_IdAndFechaHoraBetween(Long personalValidadorId, Instant inicio, Instant fin);
 }
 

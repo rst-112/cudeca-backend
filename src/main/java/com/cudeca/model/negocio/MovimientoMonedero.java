@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -45,7 +44,6 @@ public class MovimientoMonedero {
     @Positive(message = "El importe debe ser positivo")
     private BigDecimal importe;
 
-    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant fecha;
 

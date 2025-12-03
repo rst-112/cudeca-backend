@@ -17,9 +17,9 @@ import java.util.List;
 public interface SuscripcionRepository extends JpaRepository<Suscripcion, Long> {
 
     /**
-     * Encuentra suscripciones activas de un usuario.
+     * Encuentra suscripciones activas de un comprador.
      */
-    List<Suscripcion> findByUsuario_IdAndEstado(Long usuarioId, EstadoSuscripcion estado);
+    List<Suscripcion> findByComprador_IdAndEstado(Long compradorId, EstadoSuscripcion estado);
 
     /**
      * Encuentra suscripciones próximas a vencer.
@@ -27,9 +27,9 @@ public interface SuscripcionRepository extends JpaRepository<Suscripcion, Long> 
     List<Suscripcion> findByFechaFinBetweenAndEstado(Instant fechaInicio, Instant fechaFin, EstadoSuscripcion estado);
 
     /**
-     * Cuenta suscripciones activas de un usuario.
+     * Cuenta suscripciones activas de un comprador.
      */
-    long countByUsuario_IdAndEstado(Long usuarioId, EstadoSuscripcion estado);
+    long countByComprador_IdAndEstado(Long compradorId, EstadoSuscripcion estado);
 
     /**
      * Encuentra suscripciones con renovación automática.

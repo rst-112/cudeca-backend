@@ -15,10 +15,10 @@ public interface EntradaEmitidaRepository extends JpaRepository<EntradaEmitida, 
     /**
      * Encuentra una entrada por su código QR.
      */
-    Optional<EntradaEmitida> findByCodigoQr(String codigoQr);
+    Optional<EntradaEmitida> findByCodigoQR(String codigoQR);
 
     /**
-     * Cuenta entradas asociadas a un item de compra.
+     * Cuenta entradas asociadas a un artículo de entrada.
      */
-    long countByItemCompra_Id(Long itemCompraId);
+    long countByArticuloEntrada_Id(Long articuloEntradaId);
 }

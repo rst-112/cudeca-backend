@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -64,7 +63,6 @@ public class Devolucion {
     private TipoDevolucion tipo;
 
     // --- AUDITORÍA ---
-    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant fecha;
 
