@@ -1,68 +1,89 @@
 package com.cudeca.model.evento;
 
-import com.cudeca.enums.EstadoAsiento;
-// Asegúrate de importar el Enum correcto. Si está en model.enums, cámbialo.
-// import com.cudeca.model.enums.EstadoAsiento;
-
-import com.cudeca.model.negocio.ArticuloEntrada;
+import com.cudeca.model.enums.EstadoAsiento;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Entidad que representa un asiento o localidad física en un recinto de evento.
+ * Puede estar libre, bloqueado o vendido.
+ */
 @Entity
-@Table(name = "ASIENTOS")
+@Table(name = "ASIENTOS", uniqueConstraints = {
+        @UniqueConstraint(name = "ux_zona_codigo", columnNames = {"zona_id", "codigo_etiqueta"})
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder // Añadido para poder usar .builder() como en el resto del proyecto
+@Builder
 public class Asiento {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "codigo_etiqueta", nullable = false, length = 20)
+    @NotNull(message = "El código de etiqueta es obligatorio")
+    @Size(min = 1, max = 20)
     private String codigoEtiqueta;
+
+    @Column
     private Integer fila;
+
+    @Column
     private Integer columna;
 
     @Enumerated(EnumType.STRING)
-    private EstadoAsiento estado;
+    @Column(nullable = false)
+    @Builder.Default
+    private EstadoAsiento estado = EstadoAsiento.LIBRE;
 
     // --- RELACIONES ---
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "zona_id") // <--- ¡ESTE ES EL CAMBIO! (Antes Hibernate buscaba zona_recinto_id)
+    @JoinColumn(name = "zona_id", nullable = false)
+    @NotNull(message = "La zona es obligatoria")
     @ToString.Exclude
-    private ZonaRecinto zonaRecinto;
+    private ZonaRecinto zona;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tipo_entrada_id") // Nombre explícito de la columna en BD
+    @JoinColumn(name = "tipo_entrada_id", nullable = false)
+    @NotNull(message = "El tipo de entrada es obligatorio")
     @ToString.Exclude
-    private TipoEntrada tipoEntradaAsignada;
+    private TipoEntrada tipoEntrada;
 
-    // --- CORRECCIÓN CRÍTICA AQUÍ ---
-    // Antes: @ManyToMany -> ERROR (No casa con el @ManyToOne de ArticuloEntrada)
-    // Ahora: @OneToMany -> CORRECTO
-    @OneToMany(mappedBy = "asiento", cascade = CascadeType.ALL)
-    @Builder.Default // Para quitar el warning amarillo de Lombok
-    @ToString.Exclude // Para evitar StackOverflow
-    private List<ArticuloEntrada> articulosEntrada = new ArrayList<>();
+    // --- MÉTODOS DE NEGOCIO ---
 
-    // --- MÉTODOS ---
-
-    public void reservar(){
-        this.estado = EstadoAsiento.RESERVADO;
+    /**
+     * Bloquea el asiento cambiando su estado a BLOQUEADO.
+     */
+    public void bloquear() {
+        this.estado = EstadoAsiento.BLOQUEADO;
     }
 
-    public void liberar(){
-        this.estado = EstadoAsiento.DISPONIBLE;
+    /**
+     * Libera el asiento cambiando su estado a LIBRE.
+     */
+    public void liberar() {
+        this.estado = EstadoAsiento.LIBRE;
     }
 
-    // Método helper opcional para mantener la coherencia
-    public void addArticuloEntrada(ArticuloEntrada articulo) {
-        this.articulosEntrada.add(articulo);
-        articulo.setAsiento(this);
+    /**
+     * Marca el asiento como vendido.
+     */
+    public void vender() {
+        this.estado = EstadoAsiento.VENDIDO;
+    }
+
+    /**
+     * Verifica si el asiento está disponible (LIBRE).
+     */
+    public boolean estaDisponible() {
+        return this.estado == EstadoAsiento.LIBRE;
     }
 }

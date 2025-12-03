@@ -1,7 +1,7 @@
 package com.cudeca.repository;
 
+import com.cudeca.model.enums.EstadoNotificacion;
 import com.cudeca.model.negocio.Notificacion;
-import com.cudeca.enums.EstadoNotificacion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

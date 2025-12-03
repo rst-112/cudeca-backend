@@ -1,11 +1,15 @@
 package com.cudeca.model.negocio;
 
-import com.cudeca.enums.EstadoPago;
-import com.cudeca.enums.MetodoPago;
+import com.cudeca.model.enums.EstadoPago;
+import com.cudeca.model.enums.MetodoPago;
 // import com.cudeca.model.negocio.Devolucion; // <-- DESCOMENTAR CUANDO TENGAS LA CLASE DEVOLUCION
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -54,10 +58,13 @@ public class Pago {
 
     // SQL: NUMERIC(12,2) NOT NULL CHECK (importe > 0)
     @Column(nullable = false, precision = 12, scale = 2)
+    @NotNull(message = "El importe es obligatorio")
+    @Positive(message = "El importe debe ser positivo")
     private BigDecimal importe;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @NotNull(message = "El método de pago es obligatorio")
     private MetodoPago metodo;
 
     @Enumerated(EnumType.STRING)
@@ -71,6 +78,7 @@ public class Pago {
 
     // --- AUDITORÍA ---
 
+    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

@@ -1,4 +1,4 @@
-package com.cudeca.enums;
+package com.cudeca.model.enums;
 
 public enum EstadoNotificacion {
     PENDIENTE, // Está en cola para enviarse

@@ -1,44 +1,39 @@
 package com.cudeca.repository;
 
 import com.cudeca.model.negocio.CertificadoFiscal;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Repositorio para gestionar los Certificados de Donación.
- * Crítico para el cumplimiento fiscal y la deducción de impuestos de los socios.
+ * Repositorio para gestionar certificados fiscales.
  */
-@Repository // (1)
-public interface CertificadoFiscalRepository extends JpaRepository<CertificadoFiscal, Long> { // (2)
+@Repository
+public interface CertificadoFiscalRepository extends JpaRepository<CertificadoFiscal, Long> {
 
     /**
-     * Busca el certificado asociado a una compra concreta.
-     * USO: Botón "Descargar Certificado" en el detalle del pedido.
-     *
-     * @param compraId ID de la compra.
-     * @return Optional (puede que la compra no tenga donación y por tanto no tenga certificado).
+     * Encuentra un certificado por número de serie.
      */
-    Optional<CertificadoFiscal> findByCompra_Id(Long compraId); // (3)
+    Optional<CertificadoFiscal> findByNumeroSerie(String numeroSerie);
 
     /**
-     * Busca un certificado por su código único oficial.
-     * USO: Auditoría o validación de autenticidad (QR en el PDF).
-     *
-     * @param numeroSerie El código único (ej: "2025-DON-999").
-     * @return Optional con el documento.
+     * Encuentra certificados emitidos en un rango de fechas.
      */
-    Optional<CertificadoFiscal> findByNumeroSerie(String numeroSerie); // (4)
+    Page<CertificadoFiscal> findByFechaEmisionBetween(Instant fechaInicio, Instant fechaFin, Pageable pageable);
 
     /**
-     * Recupera todos los certificados emitidos para un perfil fiscal concreto.
-     * USO: "Mi Cuenta -> Mis Certificados". El usuario quiere ver todo lo que ha donado
-     * con el NIF "12345678Z".
-     *
-     * @param datosFiscalesId ID de los datos fiscales.
-     * @return Lista de certificados.
+     * Encuentra certificados de un usuario.
      */
-    List<CertificadoFiscal> findByDatosFiscales_Id(Long datosFiscalesId); // (5)
+    Page<CertificadoFiscal> findByDatosFiscales_Usuario_Id(Long usuarioId, Pageable pageable);
+
+    /**
+     * Cuenta certificados de un usuario.
+     */
+    long countByDatosFiscales_Usuario_Id(Long usuarioId);
 }
+

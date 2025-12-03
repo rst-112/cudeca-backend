@@ -1,7 +1,7 @@
 package com.cudeca.repository;
 
 import com.cudeca.model.negocio.SolicitudRetiro;
-import com.cudeca.enums.EstadoRetiro;
+import com.cudeca.model.enums.EstadoRetiro;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

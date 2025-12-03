@@ -19,7 +19,12 @@ import com.cudeca.model.negocio.Devolucion;
  import com.cudeca.model.evento.ReglaPrecio;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -51,16 +56,19 @@ public class Compra {
 
     // --- DATOS BÁSICOS ---
 
-    @Column(nullable = false)
-    @Builder.Default
-    private Instant fecha = Instant.now();
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private Instant fecha;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @NotNull(message = "El estado es obligatorio")
     @Builder.Default
     private EstadoCompra estado = EstadoCompra.PENDIENTE;
 
     @Column(name = "email_contacto", length = 150)
+    @Email(message = "El email debe ser válido")
+    @Size(max = 150)
     private String emailContacto;
 
     // --- CONEXIONES: QUÉ COMPRA (Artículos) ---
@@ -141,7 +149,7 @@ public class Compra {
     /**
      * Aplica una lista de reglas de precio a la compra actual.
      * Genera registros de AjustePrecio y los añade a la lista 'ajustes'.
-     * * @param reglas Lista de reglas activas para el evento (proporcionadas por el servicio).
+     * * @param reglas Lista de r   eglas activas para el evento (proporcionadas por el servicio).
      */
     public void aplicarReglasPrecio(List<ReglaPrecio> reglas) {
         if (reglas == null || reglas.isEmpty()) {
@@ -165,13 +173,13 @@ public class Compra {
 
         for (ReglaPrecio regla : reglas) {
             // 1. Filtro: Si la regla requiere suscripción y el usuario NO es socio, la saltamos.
-            if (regla.isRequiereSuscripcion() && !esSocioActivo) {
+            if (regla.getRequiereSuscripcion() && !esSocioActivo) {
                 continue;
             }
 
             // 2. Calcular el descuento usando el método que ya trae la clase ReglaPrecio
             // El método aplicarDescuento devuelve el precio FINAL, así que calculamos la diferencia.
-            BigDecimal precioConDescuento = regla.aplicarDescuento(subtotal);
+            BigDecimal precioConDescuento = regla.aplicarAjuste(subtotal);
             BigDecimal montoDescontado = subtotal.subtract(precioConDescuento);
 
             // Si el descuento es 0 o negativo (error), no hacemos nada

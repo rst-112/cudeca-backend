@@ -57,17 +57,7 @@ public abstract class Usuario {
     private Set<Rol> roles = new HashSet<>();
 
     // --- MÉTODOS DEL CICLO DE VIDA (PrePersist/PreUpdate) ---
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = Instant.now();
-        this.updatedAt = Instant.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = Instant.now();
-    }
+    // Las anotaciones @CreationTimestamp y @UpdateTimestamp manejan automáticamente las fechas
 
     // Añadir si quieres ver el historial de tokens de un usuario:
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)

@@ -1,7 +1,7 @@
 package com.cudeca.repository;
 
 import com.cudeca.model.negocio.Pago;
-import com.cudeca.enums.EstadoPago;
+import com.cudeca.model.enums.EstadoPago;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

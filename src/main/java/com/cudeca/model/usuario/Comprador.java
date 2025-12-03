@@ -2,7 +2,7 @@ package com.cudeca.model.usuario;
 
 import com.cudeca.model.negocio.Monedero;
 import com.cudeca.model.negocio.SolicitudRetiro;
-import com.cudeca.enums.EstadoRetiro; // Necesario para el método helper
+import com.cudeca.model.enums.EstadoRetiro; // Necesario para el método helper
 // import com.cudeca.model.negocio.Suscripcion; // <-- B3: Descomentar cuando exista Suscripción
 
 import jakarta.persistence.*;

@@ -1,7 +1,7 @@
 package com.cudeca.model.negocio;
 
 import com.cudeca.model.usuario.Usuario;
-import com.cudeca.enums.EstadoRetiro;
+import com.cudeca.model.enums.EstadoRetiro;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;

@@ -1,14 +1,24 @@
 package com.cudeca.model.negocio;
 
-import com.cudeca.enums.TipoDevolucion;
+import com.cudeca.model.enums.TipoDevolucion;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/**
+ * Entidad que registra una devolución de dinero asociada a una compra.
+ * Puede ser devuelto a través de la pasarela de pago o al monedero del usuario.
+ */
 @Entity
-@Table(name = "DEVOLUCIONES")
+@Table(name = "DEVOLUCIONES", indexes = {
+        @Index(name = "ix_devol_compra", columnList = "compra_id")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -20,63 +30,64 @@ public class Devolucion {
     private Long id;
 
     // --- RELACIÓN CON COMPRA (Obligatoria) ---
-    // SQL: compra_id BIGINT NOT NULL
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "compra_id", nullable = false)
+    @NotNull(message = "La compra es obligatoria")
     @ToString.Exclude
     private Compra compra;
 
     // --- RELACIÓN CON PAGO (Si es tipo PASARELA) ---
-    // SQL: pago_id BIGINT REFERENCES PAGOS
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pago_id")
     @ToString.Exclude
     private Pago pago;
 
     // --- RELACIÓN CON MOVIMIENTO (Si es tipo MONEDERO) ---
-    // SQL: mov_monedero_id BIGINT REFERENCES MOVIMIENTOS_MONEDERO
-    // Es OneToOne porque un movimiento de abono corresponde a una devolución específica.
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "mov_monedero_id")
     @ToString.Exclude
     private MovimientoMonedero movimientoMonedero;
 
     // --- DATOS ECONÓMICOS ---
-
-    // SQL: NUMERIC(12,2) NOT NULL CHECK (importe > 0)
     @Column(nullable = false, precision = 12, scale = 2)
+    @NotNull(message = "El importe es obligatorio")
+    @Positive(message = "El importe debe ser positivo")
     private BigDecimal importe;
 
     @Column(length = 255)
-    private String motivo; // Ej: "Cancelación de evento", "Error usuario"
+    @Size(max = 255)
+    private String motivo;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @NotNull(message = "El tipo de devolución es obligatorio")
     private TipoDevolucion tipo;
 
     // --- AUDITORÍA ---
-
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant fecha;
 
     // --- CICLO DE VIDA ---
 
-    @PrePersist // <--- ESTA ES LA ÚNICA VEZ QUE PUEDE APARECER '@PrePersist'
+    @PrePersist
     public void prePersist() {
-        // 1. Asignar fecha si no existe
         if (this.fecha == null) {
             this.fecha = Instant.now();
         }
-        // 2. Llamar a la validación manualmente
         validarConsistencia();
     }
 
-    @PreUpdate // Esta sí puede estar aquí
+    @PreUpdate
     public void preUpdate() {
         validarConsistencia();
     }
 
-    // OJO: Este método NO debe tener ninguna anotación @Pre...
+    /**
+     * Valida que la devolución sea consistente según su tipo.
+     * - Si es MONEDERO: debe tener movimientoMonedero
+     * - Si es PASARELA: debe tener pago
+     */
     private void validarConsistencia() {
         if (tipo == TipoDevolucion.MONEDERO && movimientoMonedero == null) {
             throw new IllegalStateException("Una devolución a MONEDERO debe tener un Movimiento asociado.");

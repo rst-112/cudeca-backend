@@ -1,15 +1,21 @@
 package com.cudeca.model.usuario;
 
 import com.cudeca.model.negocio.Compra;
-import com.cudeca.model.usuario.VerificacionCuenta; // <-- DESCOMENTAR CUANDO TENGAS LA CLASE VERIFICACION
-
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Entidad que representa a un usuario invitado (sin registrarse en la plataforma).
+ * Puede hacer compras y posteriormente reclamar su cuenta.
+ */
 @Entity
-@Table(name = "INVITADOS") // Nombre exacto del SQL
+@Table(name = "INVITADOS")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,34 +27,46 @@ public class Invitado {
     private Long id;
 
     // --- DATOS DEL INVITADO ---
-    // SQL: email VARCHAR(150) NOT NULL UNIQUE
     @Column(nullable = false, unique = true, length = 150)
+    @NotNull(message = "El email es obligatorio")
+    @Email(message = "El email debe ser válido")
+    @Size(max = 150)
     private String email;
 
     // --- CONEXIONES: HISTORIAL DE COMPRAS ---
-    // Un invitado puede hacer muchas compras con el mismo email antes de registrarse.
-    // Relación bidireccional con Compra.
-
     @OneToMany(mappedBy = "invitado", cascade = CascadeType.ALL)
     @Builder.Default
     @ToString.Exclude
     private List<Compra> compras = new ArrayList<>();
 
     // --- CONEXIONES: SEGURIDAD (Reclamar Cuenta) ---
-    // SQL: Tabla VERIFICACIONES_CUENTA tiene invitado_id
-    // Esta relación es vital para el CU1.2 "Reclamar cuenta".
-    // Permite enviar un token al invitado para que fusione sus datos con un nuevo usuario.
-
     @OneToMany(mappedBy = "invitado", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
     private List<VerificacionCuenta> verificaciones = new ArrayList<>();
 
-
     // --- MÉTODOS HELPER ---
 
+    /**
+     * Añade una compra al historial del invitado.
+     */
     public void addCompra(Compra compra) {
+        if (this.compras == null) {
+            this.compras = new ArrayList<>();
+        }
         this.compras.add(compra);
         compra.setInvitado(this);
     }
+
+    /**
+     * Añade una verificación de cuenta.
+     */
+    public void addVerificacion(VerificacionCuenta verificacion) {
+        if (this.verificaciones == null) {
+            this.verificaciones = new ArrayList<>();
+        }
+        this.verificaciones.add(verificacion);
+        verificacion.setInvitado(this);
+    }
+
 }

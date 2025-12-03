@@ -1,47 +1,39 @@
 package com.cudeca.repository;
 
 import com.cudeca.model.negocio.Suscripcion;
-import com.cudeca.enums.EstadoSuscripcion;
+import com.cudeca.model.enums.EstadoSuscripcion;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * Repositorio para la gestión de membresías (Socios).
- * Clave para la financiación recurrente de la fundación.
+ * Repositorio para gestionar suscripciones de usuarios.
  */
-@Repository // (1)
-public interface SuscripcionRepository extends JpaRepository<Suscripcion, Long> { // (2)
+@Repository
+public interface SuscripcionRepository extends JpaRepository<Suscripcion, Long> {
 
     /**
-     * Busca la suscripción activa (o inactiva) de un comprador.
-     * USO: Cuando el usuario entra a "Mi Cuenta -> Mi Suscripción".
-     * Nota: Usamos 'findByComprador_Id' porque en la entidad Suscripcion
-     * llamamos al campo 'private Comprador comprador'.
-     *
-     * @param compradorId ID del usuario/comprador.
-     * @return Optional con la suscripción (un usuario suele tener solo una).
+     * Encuentra suscripciones activas de un usuario.
      */
-    Optional<Suscripcion> findByComprador_Id(Long compradorId); // (3)
+    List<Suscripcion> findByUsuario_IdAndEstado(Long usuarioId, EstadoSuscripcion estado);
 
     /**
-     * AUTOMATIZACIÓN: Busca suscripciones que caducan antes de una fecha.
-     * USO: Un proceso nocturno (Batch) llama a esto cada madrugada:
-     * "Dame todas las suscripciones activas que caducan mañana para cobrarles".
-     *
-     * @param estado Estado actual (ej: ACTIVA).
-     * @param fecha Límite de fecha (ej: Instant.now()).
-     * @return Lista de candidatos a renovación.
+     * Encuentra suscripciones próximas a vencer.
      */
-    List<Suscripcion> findByEstadoAndFechaFinBefore(EstadoSuscripcion estado, Instant fecha); // (4)
+    List<Suscripcion> findByFechaFinBetweenAndEstado(Instant fechaInicio, Instant fechaFin, EstadoSuscripcion estado);
 
     /**
-     * Busca suscripciones por estado y renovación automática.
-     * USO: Para estadísticas o procesos masivos.
-     * Ej: "Dime cuántos socios activos tenemos con renovación automática activada".
+     * Cuenta suscripciones activas de un usuario.
      */
-    long countByEstadoAndRenovacionAutomaticaTrue(EstadoSuscripcion estado); // (5)
+    long countByUsuario_IdAndEstado(Long usuarioId, EstadoSuscripcion estado);
+
+    /**
+     * Encuentra suscripciones con renovación automática.
+     */
+    Page<Suscripcion> findByRenovacionAutomaticaTrue(Pageable pageable);
 }
+

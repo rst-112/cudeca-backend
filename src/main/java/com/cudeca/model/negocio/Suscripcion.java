@@ -1,7 +1,7 @@
 package com.cudeca.model.negocio;
 
 import com.cudeca.model.usuario.Comprador;
-import com.cudeca.enums.EstadoSuscripcion;
+import com.cudeca.model.enums.EstadoSuscripcion;
 // import com.cudeca.model.negocio.BeneficioSocio; // <-- DESCOMENTAR CUANDO TENGAS LA CLASE BENEFICIO
 
 import jakarta.persistence.*;

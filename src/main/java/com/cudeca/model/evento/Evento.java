@@ -1,69 +1,118 @@
 package com.cudeca.model.evento;
 
-import com.cudeca.enums.EstadoEvento;
+import com.cudeca.model.enums.EstadoEvento;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Entidad que representa un evento organizado por Cudeca.
+ * Hereda características de gestión de fechas, estado y recaudación.
+ */
 @Entity
+@Table(name = "EVENTOS", indexes = {
+        @Index(name = "ix_eventos_estado", columnList = "estado")
+})
 @Data
-@Table(name = "EVENTOS")
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Evento {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, length = 150)
+    @NotNull(message = "El nombre del evento es obligatorio")
+    @Size(min = 1, max = 150, message = "El nombre debe tener entre 1 y 150 caracteres")
     private String nombre;
+
+    @Column(columnDefinition = "TEXT")
     private String descripcion;
+
     @Column(name = "fecha_inicio", nullable = false)
+    @NotNull(message = "La fecha de inicio es obligatoria")
     private Instant fechaInicio;
 
-    @Column(name = "fecha_fin", nullable = false)
-    private Instant fechaFin; // Este es el que daba el error
+    @Column(name = "fecha_fin")
+    private Instant fechaFin;
+
+    @Column(length = 255)
+    @Size(max = 255)
     private String lugar;
+
     @Enumerated(EnumType.STRING)
-    private EstadoEvento estado;
-    private BigDecimal objetivoRecaudacion;
+    @Column(nullable = false)
+    @Builder.Default
+    private EstadoEvento estado = EstadoEvento.BORRADOR;
+
+    @Column(name = "objetivo_recaudacion", precision = 12, scale = 2)
+    @Builder.Default
+    private BigDecimal objetivoRecaudacion = BigDecimal.ZERO;
+
+    @Column(name = "imagen_url", length = 255)
     private String imagenUrl;
 
-    //relaciones
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
 
-    @OneToMany(mappedBy = "eventoAsociado")
-    private List<TipoEntrada> tiposDeEntradas;
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 
-    @OneToMany(mappedBy = "evento")
-    private List<ReglaPrecio> reglasDePrecios;
+    // --- RELACIONES ---
 
-    @OneToMany(mappedBy = "eventoAsociadoAZonaRecinto")
-    private List<ZonaRecinto> zonasRecinto;
+    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    private List<TipoEntrada> tiposEntrada = new ArrayList<>();
 
-    @OneToMany(mappedBy = "eventoAsociadoAImagenes")
-    private List<ImagenEvento> imagenesEvento;
+    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    private List<ReglaPrecio> reglasPrecios = new ArrayList<>();
 
+    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    private List<ZonaRecinto> zonasRecinto = new ArrayList<>();
 
+    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    private List<ImagenEvento> imagenesEvento = new ArrayList<>();
 
-    //crear metodos
+    // --- MÉTODOS DE NEGOCIO ---
 
-    public void publicar(){
+    /**
+     * Publica el evento cambiando su estado a PUBLICADO.
+     */
+    public void publicar() {
         this.estado = EstadoEvento.PUBLICADO;
     }
 
-    public void cancelar(){
+    /**
+     * Cancela el evento cambiando su estado a CANCELADO.
+     */
+    public void cancelar() {
         this.estado = EstadoEvento.CANCELADO;
     }
 
-    public void actualizarRecaudacion(){
-        BigDecimal recaudacionTotal = BigDecimal.ZERO;
-        for(TipoEntrada tipoEntrada : tiposDeEntradas){
-            recaudacionTotal= recaudacionTotal.add(tipoEntrada.getPrecioTotal());
-        }
-        // Aquí podrías almacenar o utilizar la recaudación total según sea necesario
+    /**
+     * Finaliza el evento cambiando su estado a FINALIZADO.
+     */
+    public void finalizar() {
+        this.estado = EstadoEvento.FINALIZADO;
     }
-
 
 }

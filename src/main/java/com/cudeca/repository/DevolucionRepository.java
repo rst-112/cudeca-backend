@@ -1,7 +1,7 @@
 package com.cudeca.repository;
 
 import com.cudeca.model.negocio.Devolucion;
-import com.cudeca.enums.TipoDevolucion;
+import com.cudeca.model.enums.TipoDevolucion;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

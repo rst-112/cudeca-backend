@@ -1,7 +1,7 @@
 package com.cudeca.model.negocio;
 
+import com.cudeca.model.enums.EstadoNotificacion;
 import com.cudeca.model.usuario.Usuario;
-import com.cudeca.enums.EstadoNotificacion;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.Instant;
