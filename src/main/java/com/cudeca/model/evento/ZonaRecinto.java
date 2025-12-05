@@ -54,7 +54,7 @@ public class ZonaRecinto {
      */
     public Integer calcularAsientosDisponibles() {
         return asientos.stream()
-                .filter(asiento -> asiento.estaDisponible())
+                .filter(Asiento::estaDisponible)
                 .mapToInt(asiento -> 1)
                 .sum();
     }

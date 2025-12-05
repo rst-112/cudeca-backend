@@ -14,8 +14,8 @@ import java.util.Optional;
  * Repositorio central para la gestión de Compras (Pedidos).
  * Es el corazón del historial de ventas y la analítica.
  */
-@Repository // (1)
-public interface CompraRepository extends JpaRepository<Compra, Long> { // (2)
+@Repository
+public interface CompraRepository extends JpaRepository<Compra, Long> {
 
     /**
      * Recupera el historial de compras de un usuario registrado.
@@ -24,31 +24,31 @@ public interface CompraRepository extends JpaRepository<Compra, Long> { // (2)
      * @param usuarioId ID del usuario (clave foránea).
      * @return Lista de compras.
      */
-    List<Compra> findByUsuario_Id(Long usuarioId); // (3)
+    List<Compra> findByUsuario_Id(Long usuarioId);
 
     /**
      * MEJOR PRÁCTICA: Versión paginada del historial.
      * Si un usuario es muy fiel y tiene 100 compras, no queremos traerlas todas de golpe.
      * Traemos las 10 últimas ordenadas por fecha.
      */
-    Page<Compra> findByUsuario_Id(Long usuarioId, Pageable pageable); // (4)
+    Page<Compra> findByUsuario_Id(Long usuarioId, Pageable pageable);
 
     /**
      * Busca compras por email de contacto (útil para Invitados).
      * USO: "Recuperar mis entradas" (cuando no tienes cuenta).
      */
-    List<Compra> findByEmailContacto(String emailContacto); // (5)
+    List<Compra> findByEmailContacto(String emailContacto);
 
     /**
      * SEGURIDAD: Busca una compra específica asegurando que pertenece a quien la pide.
      * Evita que el usuario con ID=1 acceda a la compra del ID=5 cambiando la URL.
      * SQL: SELECT * FROM compras WHERE id = ? AND usuario_id = ?
      */
-    Optional<Compra> findByIdAndUsuario_Id(Long id, Long usuarioId); // (6)
+    Optional<Compra> findByIdAndUsuario_Id(Long id, Long usuarioId);
 
     /**
      * REPORTING: Busca compras en un rango de fechas.
      * USO: Panel de Admin -> "Ver ventas de la semana pasada".
      */
-    List<Compra> findByFechaBetween(Instant inicio, Instant fin); // (7)
+    List<Compra> findByFechaBetween(Instant inicio, Instant fin);
 }

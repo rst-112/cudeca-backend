@@ -17,4 +17,3 @@ public interface PermisoRepository extends JpaRepository<Permiso, Long> {
      */
     Optional<Permiso> findByCodigoIgnoreCase(String codigo);
 }
-

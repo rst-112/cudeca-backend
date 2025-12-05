@@ -1,7 +1,7 @@
 package com.cudeca.repository;
 
-import com.cudeca.model.negocio.Pago;
 import com.cudeca.model.enums.EstadoPago;
+import com.cudeca.model.negocio.Pago;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,8 +12,8 @@ import java.util.Optional;
  * Repositorio para la gestión de transacciones económicas (Pagos).
  * Fundamental para la conciliación bancaria y la integración con pasarelas.
  */
-@Repository // (1)
-public interface PagoRepository extends JpaRepository<Pago, Long> { // (2)
+@Repository
+public interface PagoRepository extends JpaRepository<Pago, Long> {
 
     /**
      * Busca un pago por el ID de la transacción de la pasarela externa.
@@ -23,7 +23,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> { // (2)
      * @param idTransaccionExterna El ID proporcionado por la pasarela.
      * @return Optional con el pago (debe ser único).
      */
-    Optional<Pago> findByIdTransaccionExterna(String idTransaccionExterna); // (3)
+    Optional<Pago> findByIdTransaccionExterna(String idTransaccionExterna);
 
     /**
      * Recupera todos los pagos asociados a una compra.
@@ -32,7 +32,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> { // (2)
      * @param compraId ID de la compra.
      * @return Lista de intentos de pago.
      */
-    List<Pago> findByCompra_Id(Long compraId); // (4)
+    List<Pago> findByCompra_Id(Long compraId);
 
     /**
      * Recupera el historial de pagos de una suscripción recurrente.
@@ -41,12 +41,12 @@ public interface PagoRepository extends JpaRepository<Pago, Long> { // (2)
      * @param suscripcionId ID de la suscripción.
      * @return Lista de cuotas pagadas (o intentadas).
      */
-    List<Pago> findBySuscripcion_Id(Long suscripcionId); // (5)
+    List<Pago> findBySuscripcion_Id(Long suscripcionId);
 
     /**
      * Busca pagos por su estado.
      * Útil para procesos batch (tareas programadas) que buscan pagos "PENDIENTE"
      * que se han quedado colgados para cancelarlos por timeout.
      */
-    List<Pago> findByEstado(EstadoPago estado); // (6)
+    List<Pago> findByEstado(EstadoPago estado);
 }

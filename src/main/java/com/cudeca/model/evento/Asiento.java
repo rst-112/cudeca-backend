@@ -6,9 +6,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Entidad que representa un asiento o localidad física en un recinto de evento.
  * Puede estar libre, bloqueado o vendido.

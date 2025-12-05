@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.OffsetDateTime;
 
 /**
  * Entidad que registra una devolución de dinero asociada a una compra.
@@ -64,14 +64,12 @@ public class Devolucion {
 
     // --- AUDITORÍA ---
     @Column(nullable = false, updatable = false)
-    private Instant fecha;
-
-    // --- CICLO DE VIDA ---
+    private OffsetDateTime fecha;
 
     @PrePersist
     public void prePersist() {
         if (this.fecha == null) {
-            this.fecha = Instant.now();
+            this.fecha = OffsetDateTime.now();
         }
         validarConsistencia();
     }

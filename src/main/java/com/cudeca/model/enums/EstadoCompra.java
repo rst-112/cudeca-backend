@@ -5,5 +5,5 @@ public enum EstadoCompra {
     COMPLETADA,
     PARCIAL_REEMBOLSADA,
     REEMBOLSADA,
-    CANCELADA;
-    }
+    CANCELADA
+}

@@ -28,4 +28,3 @@ public interface ImagenEventoRepository extends JpaRepository<ImagenEvento, Long
      */
     List<ImagenEvento> findByEvento_IdAndEsResumen(Long eventoId, Boolean esResumen);
 }
-

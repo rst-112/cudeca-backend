@@ -9,4 +9,3 @@ public enum EstadoSuscripcion {
     RENOVACION,
     CANCELADA
 }
-

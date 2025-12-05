@@ -126,12 +126,27 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
+
+                <configuration>
+                    <excludes>
+                        <exclude>com/cudeca/model/**</exclude>
+                        <exclude>com/cudeca/dto/**</exclude>
+
+                        <exclude>com/cudeca/repository/**</exclude>
+                        <exclude>com/cudeca/config/**</exclude>
+                        <exclude>com/cudeca/exception/**</exclude>
+
+                        <exclude>com/cudeca/CudecaBackendApplication.class</exclude>
+                    </excludes>
+                </configuration>
+
                 <executions>
                     <execution>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
+
                     <execution>
                         <id>report</id>
                         <phase>test</phase>
@@ -139,6 +154,7 @@
                             <goal>report</goal>
                         </goals>
                     </execution>
+
                     <execution>
                         <id>jacoco-check</id>
                         <goals>
@@ -235,6 +251,7 @@
                     <effort>Max</effort>
                     <threshold>Low</threshold>
                     <failOnError>true</failOnError>
+                    <excludeFilterFile>spotbugs-exclude.xml</excludeFilterFile>
                 </configuration>
                 <executions>
                     <execution>

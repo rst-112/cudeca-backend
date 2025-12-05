@@ -1,22 +1,23 @@
 package com.cudeca.model.negocio;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
 
+import java.math.BigDecimal;
+
 @Entity
-@DiscriminatorValue("DONACION") // <--- Pone "DONACION" en la BD
+@DiscriminatorValue("DONACION")
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
 public class ArticuloDonacion extends ArticuloCompra {
 
-    // Diagrama: destino: String
-    // Nota: Asegúrate de añadir la columna 'destino' a la tabla ITEMS_COMPRA en la BD
-    // o esto fallará al arrancar.
-    //@Column(name = "destino")
-    @Transient
-    private String destino; // Ej: "Hospice", "Investigación"
+    @Override
+    public boolean validar() {
+        return getCantidad() != null && getCantidad() > 0
+                && getPrecioUnitario() != null && getPrecioUnitario().compareTo(BigDecimal.ZERO) >= 0;
+    }
 }

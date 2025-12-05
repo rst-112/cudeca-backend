@@ -11,8 +11,8 @@ import java.util.Optional;
  * Repositorio para gestionar los consentimientos legales (RGPD) asociados a las compras.
  * Permite verificar qué aceptó el usuario y en qué versión.
  */
-@Repository // (1)
-public interface ConsentimientoRepository extends JpaRepository<Consentimiento, Long> { // (2)
+@Repository
+public interface ConsentimientoRepository extends JpaRepository<Consentimiento, Long> {
 
     /**
      * Recupera todos los consentimientos firmados en una compra.
@@ -22,7 +22,7 @@ public interface ConsentimientoRepository extends JpaRepository<Consentimiento, 
      * @param compraId ID de la compra.
      * @return Lista de consentimientos.
      */
-    List<Consentimiento> findByCompra_Id(Long compraId); // (3)
+    List<Consentimiento> findByCompra_Id(Long compraId);
 
     /**
      * Busca un consentimiento específico por tipo dentro de una compra.
@@ -30,14 +30,14 @@ public interface ConsentimientoRepository extends JpaRepository<Consentimiento, 
      * SQL: SELECT * FROM consentimientos WHERE compra_id = ? AND tipo = ?
      *
      * @param compraId ID de la compra.
-     * @param tipo El tipo de consentimiento (ej: "MARKETING").
+     * @param tipo     El tipo de consentimiento (ej: "MARKETING").
      * @return Optional (porque puede que no exista ese registro para esa compra).
      */
-    Optional<Consentimiento> findByCompra_IdAndTipo(Long compraId, String tipo); // (4)
+    Optional<Consentimiento> findByCompra_IdAndTipo(Long compraId, String tipo);
 
     /**
      * AUDITORÍA: Cuenta cuántos usuarios han aceptado una versión específica.
      * USO: El departamento legal pregunta: "¿Cuánta gente ha aceptado ya la v2.0 de la Política?".
      */
-    long countByTipoAndVersionAndOtorgadoTrue(String tipo, String version); // (5)
+    long countByTipoAndVersionAndOtorgadoTrue(String tipo, String version);
 }

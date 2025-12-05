@@ -2,11 +2,12 @@ package com.cudeca.model.usuario;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "ROLES") // Nombre exacto del DDL
+@Table(name = "ROLES")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,34 +18,25 @@ public class Rol {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // DDL: nombre VARCHAR(80) NOT NULL UNIQUE
     @Column(nullable = false, unique = true, length = 80)
-    private String nombre; // Ej: "ADMIN", "SOCIO", "STAFF"
+    private String nombre;
 
-    // --- RELACIÓN CON PERMISOS (ManyToMany Puro) ---
-    // Al no tener datos extra (fecha, etc), JPA lo maneja solo con esta anotación.
-
-    @ManyToMany(fetch = FetchType.EAGER) // EAGER: Al cargar el Rol, trae sus permisos inmediatamente (vital para Seguridad)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "ROLES_PERMISOS",                  // Tabla intermedia del SQL
-            joinColumns = @JoinColumn(name = "rol_id"), // Mi ID
-            inverseJoinColumns = @JoinColumn(name = "permiso_id") // El ID del otro
+            name = "ROLES_PERMISOS",
+            joinColumns = @JoinColumn(name = "rol_id"),
+            inverseJoinColumns = @JoinColumn(name = "permiso_id")
     )
-    @Builder.Default // Para que el Builder inicie el HashSet vacío en vez de null
-    @ToString.Exclude // Evita bucles infinitos
+    @Builder.Default
+    @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Permiso> permisos = new HashSet<>();
-
-    // --- RELACIÓN INVERSA CON USUARIO_ROL (Opcional pero recomendada) ---
-    // Esto permite saber "quiénes tienen este rol" consultando desde el objeto Rol.
 
     @OneToMany(mappedBy = "rol", cascade = CascadeType.ALL)
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<UsuarioRol> asignaciones = new HashSet<>();
-
-    // --- MÉTODOS HELPER (Para gestión limpia) ---
 
     public void addPermiso(Permiso permiso) {
         this.permisos.add(permiso);

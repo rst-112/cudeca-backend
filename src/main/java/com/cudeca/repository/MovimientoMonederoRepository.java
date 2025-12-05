@@ -12,8 +12,8 @@ import java.util.List;
  * Repositorio para gestionar el historial de transacciones del monedero.
  * Permite consultar abonos, cargos y retiros.
  */
-@Repository // (1)
-public interface MovimientoMonederoRepository extends JpaRepository<MovimientoMonedero, Long> { // (2)
+@Repository
+public interface MovimientoMonederoRepository extends JpaRepository<MovimientoMonedero, Long> {
 
     /**
      * Recupera todos los movimientos de un monedero concreto.
@@ -22,7 +22,7 @@ public interface MovimientoMonederoRepository extends JpaRepository<MovimientoMo
      * @param monederoId ID del monedero (clave foránea).
      * @return Lista completa de movimientos.
      */
-    List<MovimientoMonedero> findByMonedero_Id(Long monederoId); // (3)
+    List<MovimientoMonedero> findByMonedero_Id(Long monederoId);
 
     /**
      * MEJOR PRÁCTICA: Recupera los movimientos PAGINADOS.
@@ -30,8 +30,8 @@ public interface MovimientoMonederoRepository extends JpaRepository<MovimientoMo
      * Se usa pasando un objeto PageRequest.of(pagina, tamaño, orden).
      *
      * @param monederoId ID del monedero.
-     * @param pageable Configuración de paginación (ej: página 0, 10 elementos, orden desc fecha).
+     * @param pageable   Configuración de paginación (ej: página 0, 10 elementos, orden desc fecha).
      * @return Una página de movimientos.
      */
-    Page<MovimientoMonedero> findByMonedero_Id(Long monederoId, Pageable pageable); // (4)
+    Page<MovimientoMonedero> findByMonedero_Id(Long monederoId, Pageable pageable);
 }

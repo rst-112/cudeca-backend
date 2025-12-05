@@ -4,8 +4,8 @@ import com.cudeca.model.usuario.VerificacionCuenta;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repositorio para gestionar los Tokens de verificación (OTP/Enlaces).
@@ -13,8 +13,8 @@ import java.util.List;
  * 1. Recuperación de contraseñas.
  * 2. Fusión de cuentas (Invitado -> Usuario Registrado).
  */
-@Repository // (1)
-public interface VerificacionCuentaRepository extends JpaRepository<VerificacionCuenta, Long> { // (2)
+@Repository
+public interface VerificacionCuentaRepository extends JpaRepository<VerificacionCuenta, Long> {
 
     /**
      * Busca una verificación por el token único (el string largo).
@@ -23,7 +23,7 @@ public interface VerificacionCuentaRepository extends JpaRepository<Verificacion
      * @param token El código de verificación.
      * @return Optional con la verificación si existe.
      */
-    Optional<VerificacionCuenta> findByToken(String token); // (3)
+    Optional<VerificacionCuenta> findByToken(String token);
 
     /**
      * Encuentra todas las verificaciones asociadas a un email.
@@ -31,8 +31,5 @@ public interface VerificacionCuentaRepository extends JpaRepository<Verificacion
      * - Auditoría: "¿Cuántas veces ha pedido recuperar contraseña este usuario?"
      * - Limpieza: "Borrar tokens antiguos de este email".
      */
-    List<VerificacionCuenta> findByEmail(String email); // (4)
-
-    // Opcional: Buscar las activas de un usuario concreto (útil para invalidar anteriores)
-    // List<VerificacionCuenta> findByUsuarioId(Long usuarioId);
+    List<VerificacionCuenta> findByEmail(String email);
 }

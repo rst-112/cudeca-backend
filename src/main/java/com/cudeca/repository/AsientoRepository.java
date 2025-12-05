@@ -1,7 +1,7 @@
 package com.cudeca.repository;
 
-import com.cudeca.model.evento.Asiento;
 import com.cudeca.model.enums.EstadoAsiento;
+import com.cudeca.model.evento.Asiento;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -34,4 +34,3 @@ public interface AsientoRepository extends JpaRepository<Asiento, Long> {
      */
     long countByZona_IdAndEstado(Long zonaId, EstadoAsiento estado);
 }
-
