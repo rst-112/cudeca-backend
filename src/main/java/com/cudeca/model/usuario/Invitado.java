@@ -68,5 +68,4 @@ public class Invitado {
         this.verificaciones.add(verificacion);
         verificacion.setInvitado(this);
     }
-
 }

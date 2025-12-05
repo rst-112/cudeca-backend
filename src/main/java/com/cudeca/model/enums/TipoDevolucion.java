@@ -7,4 +7,3 @@ public enum TipoDevolucion {
     PASARELA,
     MONEDERO
 }
-

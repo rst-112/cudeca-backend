@@ -4,7 +4,7 @@ import com.cudeca.model.enums.FormatoExportacion;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.Instant;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "EXPORTACIONES")
@@ -22,17 +22,17 @@ public class Exportacion {
     private FormatoExportacion formato;
 
     @Column(name = "generado_en", nullable = false)
-    private Instant generadoEn;
+    private OffsetDateTime generadoEn;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "autor_id", nullable = false)
     @ToString.Exclude
-    private Administrador administrador;
+    private Usuario usuario;
 
     @PrePersist
     public void prePersist() {
         if (this.generadoEn == null) {
-            this.generadoEn = Instant.now();
+            this.generadoEn = OffsetDateTime.now();
         }
     }
 }

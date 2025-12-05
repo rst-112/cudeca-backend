@@ -22,4 +22,3 @@ public interface TipoEntradaRepository extends JpaRepository<TipoEntrada, Long> 
      */
     List<TipoEntrada> findByEvento_IdAndNombreContainingIgnoreCase(Long eventoId, String nombre);
 }
-

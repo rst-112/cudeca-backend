@@ -2,10 +2,11 @@ package com.cudeca.model.usuario;
 
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.Instant;
+
+import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "USUARIOS_ROLES") // Nombre exacto del DDL
+@Table(name = "USUARIOS_ROLES")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,29 +17,22 @@ public class UsuarioRol {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- RELACIONES (Many-to-One hacia ambos lados) ---
-
-    // Relación con Usuario (FK: usuario_id)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
-    @ToString.Exclude // Evitamos bucles infinitos en los logs
+    @ToString.Exclude
     private Usuario usuario;
 
-    // Relación con Rol (FK: rol_id)
-    @ManyToOne(fetch = FetchType.EAGER) // Eager porque al cargar el permiso queremos saber qué rol es
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "rol_id", nullable = false)
     private Rol rol;
 
-    // --- DATOS PROPIOS DE LA RELACIÓN ---
-
-    // DDL: asignado_en TIMESTAMPTZ NOT NULL DEFAULT now()
     @Column(name = "asignado_en", nullable = false, updatable = false)
-    private Instant asignadoEn;
-
-    // --- AUDITORÍA AUTOMÁTICA ---
+    private OffsetDateTime asignadoEn;
 
     @PrePersist
     protected void onCreate() {
-        this.asignadoEn = Instant.now();
+        if (this.asignadoEn == null) {
+            this.asignadoEn = OffsetDateTime.now();
+        }
     }
 }

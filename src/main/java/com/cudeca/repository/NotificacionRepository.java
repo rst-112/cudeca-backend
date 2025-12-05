@@ -11,8 +11,8 @@ import java.util.List;
  * Repositorio para la cola de correos electrónicos.
  * Permite gestionar el envío asíncrono y los reintentos ante fallos.
  */
-@Repository // (1)
-public interface NotificacionRepository extends JpaRepository<Notificacion, Long> { // (2)
+@Repository
+public interface NotificacionRepository extends JpaRepository<Notificacion, Long> {
 
     /**
      * Recupera notificaciones por estado.
@@ -22,7 +22,7 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
      * @param estado Estado del envío.
      * @return Lista de emails en cola.
      */
-    List<Notificacion> findByEstado(EstadoNotificacion estado); // (3)
+    List<Notificacion> findByEstado(EstadoNotificacion estado);
 
     /**
      * Recupera el historial de notificaciones de un usuario.
@@ -31,7 +31,7 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
      * @param usuarioId ID del usuario.
      * @return Historial de comunicaciones.
      */
-    List<Notificacion> findByUsuario_Id(Long usuarioId); // (4)
+    List<Notificacion> findByUsuario_Id(Long usuarioId);
 
     /**
      * Recupera notificaciones asociadas a una compra.
@@ -40,5 +40,5 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Long
      * @param compraId ID de la compra.
      * @return Emails relacionados con ese pedido.
      */
-    List<Notificacion> findByCompra_Id(Long compraId); // (5)
+    List<Notificacion> findByCompra_Id(Long compraId);
 }

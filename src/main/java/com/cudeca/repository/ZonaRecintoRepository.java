@@ -22,4 +22,3 @@ public interface ZonaRecintoRepository extends JpaRepository<ZonaRecinto, Long> 
      */
     List<ZonaRecinto> findByEvento_IdAndNombreContainingIgnoreCase(Long eventoId, String nombre);
 }
-

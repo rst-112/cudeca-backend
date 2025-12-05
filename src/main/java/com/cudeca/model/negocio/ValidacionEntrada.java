@@ -1,12 +1,16 @@
 package com.cudeca.model.negocio;
 
-import com.cudeca.model.usuario.PersonalEvento;
+import com.cudeca.model.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "VALIDACIONES_ENTRADA")
+@Table(name = "VALIDACIONES_ENTRADA", indexes = {
+        @Index(name = "ix_validaciones_entrada", columnList = "entrada_emitida_id")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,26 +21,21 @@ public class ValidacionEntrada {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Relación con Entrada (N:1)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "entrada_emitida_id", nullable = false)
     @ToString.Exclude
     private EntradaEmitida entradaEmitida;
 
-    // --- AQUÍ ESTÁ EL PROBLEMA ---
-    // Asegúrate de que tienes esta línea @JoinColumn(name = "usuario_id")
-    // Si no está, Hibernate busca 'personal_validador_id' y falla.
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id") // <--- ¡VERIFICA QUE ESTO ESTÁ ESCRITO!
+    @JoinColumn(name = "usuario_id", nullable = false)
     @ToString.Exclude
-    private PersonalEvento personalValidador;
+    private Usuario personalValidador;
 
     // --- DATOS ---
     @Column(name = "fecha_hora", nullable = false)
-    private Instant fechaHora;
+    private OffsetDateTime fechaHora;
 
-    @Column(name = "dispositivo_id", length = 50)
+    @Column(name = "dispositivo_id", length = 120)
     private String dispositivoId;
 
     @Column(nullable = false)
@@ -46,7 +45,7 @@ public class ValidacionEntrada {
     @PrePersist
     public void prePersist() {
         if (this.fechaHora == null) {
-            this.fechaHora = Instant.now();
+            this.fechaHora = OffsetDateTime.from(Instant.now());
         }
     }
 }

@@ -10,8 +10,8 @@ import java.util.List;
  * Repositorio para la gestión de los Datos Fiscales (Libreta de Direcciones).
  * Permite a los usuarios guardar múltiples perfiles de facturación (NIFs).
  */
-@Repository // (1)
-public interface DatosFiscalesRepository extends JpaRepository<DatosFiscales, Long> { // (2)
+@Repository
+public interface DatosFiscalesRepository extends JpaRepository<DatosFiscales, Long> {
 
     /**
      * Recupera toda la "libreta de direcciones" de un usuario concreto.
@@ -20,8 +20,5 @@ public interface DatosFiscalesRepository extends JpaRepository<DatosFiscales, Lo
      * @param usuarioId El ID del usuario propietario.
      * @return Una lista de perfiles fiscales.
      */
-    List<DatosFiscales> findByUsuarioId(Long usuarioId); // (3)
-
-    // Opcional: Si quisieras buscar por NIF para evitar duplicados dentro del mismo usuario
-    // Optional<DatosFiscales> findByUsuarioIdAndNif(Long usuarioId, String nif);
+    List<DatosFiscales> findByUsuario_Id(Long usuarioId);
 }

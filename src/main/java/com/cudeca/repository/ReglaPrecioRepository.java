@@ -22,4 +22,3 @@ public interface ReglaPrecioRepository extends JpaRepository<ReglaPrecio, Long> 
      */
     List<ReglaPrecio> findByEvento_IdAndRequiereSuscripcion(Long eventoId, Boolean requiereSuscripcion);
 }
-

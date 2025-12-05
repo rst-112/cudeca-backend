@@ -11,8 +11,8 @@ import java.util.Optional;
  * Repositorio para gestionar los beneficios activos de una suscripción.
  * Permite aplicar reglas de negocio (descuentos, prioridades) en tiempo real.
  */
-@Repository // (1)
-public interface BeneficioSocioRepository extends JpaRepository<BeneficioSocio, Long> { // (2)
+@Repository
+public interface BeneficioSocioRepository extends JpaRepository<BeneficioSocio, Long> {
 
     /**
      * Recupera todos los beneficios asociados a una suscripción concreta.
@@ -21,7 +21,7 @@ public interface BeneficioSocioRepository extends JpaRepository<BeneficioSocio, 
      * @param suscripcionId ID de la suscripción del usuario.
      * @return Lista de beneficios activos.
      */
-    List<BeneficioSocio> findBySuscripcion_Id(Long suscripcionId); // (3)
+    List<BeneficioSocio> findBySuscripcion_Id(Long suscripcionId);
 
     /**
      * Busca un beneficio específico por tipo dentro de una suscripción.
@@ -29,8 +29,8 @@ public interface BeneficioSocioRepository extends JpaRepository<BeneficioSocio, 
      * Ej: repo.findBySuscripcion_IdAndTipo(id, "DESCUENTO_TIENDA")
      *
      * @param suscripcionId ID de la suscripción.
-     * @param tipo El código del beneficio (ej: "PRIORIDAD_VENTA").
+     * @param tipo          El código del beneficio (ej: "PRIORIDAD_VENTA").
      * @return Optional con el beneficio (si lo tiene).
      */
-    Optional<BeneficioSocio> findBySuscripcion_IdAndTipo(Long suscripcionId, String tipo); // (4)
+    Optional<BeneficioSocio> findBySuscripcion_IdAndTipo(Long suscripcionId, String tipo);
 }
