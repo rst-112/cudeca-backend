@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Excluir warnings de "expose internal representation" en entidades JPA (generadas por Lombok) -->
+    <Match>
+        <Package name="~com\.cudeca\.model\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Excluir warnings de "useless control flow" en métodos de negocio -->
+    <Match>
+        <Bug pattern="UCF_USELESS_CONTROL_FLOW"/>
+    </Match>
+
+    <!-- Excluir warnings en clases generadas por Lombok -->
+    <Match>
+        <Class name="~.*\$.*Builder"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+</FindBugsFilter>
