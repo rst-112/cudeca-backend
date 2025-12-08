@@ -3,10 +3,14 @@ package com.cudeca.dto;
 import lombok.Data;
 
 import java.util.List;
-//Lo que envía el Frontend al comprar
-public class CheckoutRequest {
-   private Long usuarioId;
 
+/**
+ * DTO que representa la solicitud de checkout (finalización de compra).
+ * Contiene la información del carrito y del comprador.
+ */
+@Data
+public class CheckoutRequest {
+    private Long usuarioId;
     private String emailContacto; // Obligatorio si es invitado
 
     private List<ItemDTO> items; // El carrito

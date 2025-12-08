@@ -1,13 +1,19 @@
 package com.cudeca.dto;
 
+import lombok.Data;
+
 import java.math.BigDecimal;
 
-public class UserProfileDTO {//Datos del usuario
+/**
+ * DTO que representa el perfil de un usuario.
+ * Contiene la información personal y saldo del monedero.
+ */
+@Data
+public class UserProfileDTO {
     private Long id;
     private String nombre;
     private String email;
     private String direccion;
-    // Aquí podrías añadir saldo del monedero si hiciera falta
-    private String rol;            // "COMPRADOR"
+    private String rol;            // "COMPRADOR", "ADMINISTRADOR", etc.
     private BigDecimal saldoMonedero;
 }
