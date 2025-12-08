@@ -1,6 +1,18 @@
 spring:
   profiles:
-    default: dev # Perfil por defecto
+    default: dev
+
+# ==========================================
+# CONFIGURACIÓN GLOBAL (Aplica a Dev y Prod)
+# ==========================================
+application:
+  security:
+    jwt:
+      # Clave secreta para firmar los tokens (Base64)
+      # Se lee de la variable de entorno JWT_SECRET_KEY. Si no existe, usa el valor por defecto.
+      secret-key: ${JWT_SECRET_KEY:rN8skz5ksunBA2xbiWLw7ir+wrBou6Zx8HppAlkJUh0=}
+      expiration: 86400000 # 24 horas
+
 ---
 
 spring:
@@ -9,7 +21,6 @@ spring:
       on-profile: dev # Configuración para el perfil 'dev'
 
   datasource:
-    # === ¡¡¡IMPORTANTE!!! Revisa que estos datos coincidan con tu BD local ===
     url: jdbc:postgresql://localhost:5432/cudeca_db
     username: cudeca_user
     password: password_seguro
@@ -23,7 +34,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    open-in-view: false
 
   flyway:
     enabled: true
@@ -33,8 +43,6 @@ spring:
   mail:
     host: localhost
     port: 1025
-    username: ""
-    password: ""
     properties:
       mail:
         smtp:
@@ -45,20 +53,13 @@ spring:
     swagger-ui:
       enabled: true
 
-logging:
-  level:
-    root: INFO
-    org.springframework: INFO
-    org.hibernate.SQL: DEBUG
-    com.cudeca: DEBUG
-  pattern:
-    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
-
 server:
   port: ${SERVER_PORT:8080}
 
 ---
-
+# ==========================================
+# PERFIL PROD (Nube - Render/Neon)
+# ==========================================
 spring:
   config:
     activate:
@@ -109,6 +110,13 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"
+
+application:
+  security:
+    jwt:
+      # En producción, esta clave DEBE ser establecida a través de la variable de entorno JWT_SECRET_KEY.
+      secret-key: ${JWT_SECRET_KEY:B4-CLAVE-SECRETA-SUPER-LARGA-Y-COMPLEJA-DE-SAPOSOFT}
+      expiration: 86400000 # 24 horas en milisegundos
 
 server:
   port: ${PORT:8080}

@@ -17,8 +17,11 @@ services:
     container_name: cudeca_mailhog
     restart: always
     ports:
-      - "8025:8025"
-      - "1025:1025"
+      - "8025:8025" # UI Web para ver emails
+      - "1025:1025" # Servidor SMTP
+    volumes:
+      - mailhog_data:/maildir
 
 volumes:
   postgres_data:
+  mailhog_data:
