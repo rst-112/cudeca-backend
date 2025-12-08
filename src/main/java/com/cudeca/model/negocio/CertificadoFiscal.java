@@ -54,7 +54,7 @@ public class CertificadoFiscal {
     private String hashDocumento;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "datos_snapshot_json", columnDefinition = "jsonb")
+    @Column(name = "datos_snapshot_json", columnDefinition = "TEXT")
     private String datosSnapshotJson;
 
     @PrePersist
