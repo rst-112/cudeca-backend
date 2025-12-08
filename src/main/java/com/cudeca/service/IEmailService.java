@@ -1,5 +1,5 @@
 package com.cudeca.service;
 
-public interface EmailService {
+public interface IEmailService {
     void sendTestEmail(String to);
 }

@@ -5,7 +5,8 @@ import com.cudeca.dto.usuario.LoginRequest;
 import com.cudeca.dto.usuario.RegisterRequest;
 import com.cudeca.model.usuario.Usuario;
 import com.cudeca.repository.UsuarioRepository;
-import com.cudeca.service.impl.JwtServiceImpl; // Si la interfaz existe, usar esta.
+import com.cudeca.service.IJwtService;
+import com.cudeca.service.impl.ServiceExceptions.EmailAlreadyExistsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,7 @@ class AuthServiceTest {
     // Dependencias MOCK (simuladas)
     @Mock private UsuarioRepository usuarioRepository;
     @Mock private PasswordEncoder passwordEncoder;
-    @Mock private JwtServiceImpl jwtService; // Usamos la interfaz
+    @Mock private IJwtService jwtService; // Usamos la interfaz
     @Mock private AuthenticationManager authenticationManager;
     @Mock private Authentication authentication; // Para simular la respuesta del Manager
 
@@ -47,16 +48,15 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        registerRequest = new RegisterRequest("Test User", TEST_EMAIL, "SecurePass123");
+        registerRequest = new RegisterRequest("Test User", TEST_EMAIL, "SecurePass123!");
         loginRequest = new LoginRequest(TEST_EMAIL, "SecurePass123");
 
         // Creamos una instancia de Usuario (usaremos 'registerRequest' como datos)
-        mockUsuario = Usuario.builder()
-                .id(1L)
-                .nombre("Test User")
-                .email(TEST_EMAIL)
-                .passwordHash(ENCODED_PASSWORD) // NOTA: El método setPassword del builder/setter es 'passwordHash' en el código real.
-                .build();
+        mockUsuario = new Usuario();
+        mockUsuario.setId(1L);
+        mockUsuario.setNombre("Test User");
+        mockUsuario.setEmail(TEST_EMAIL);
+        mockUsuario.setPasswordHash(ENCODED_PASSWORD);
     }
 
     // =========================================================================================
@@ -82,7 +82,7 @@ class AuthServiceTest {
 
         // Verificamos el resultado
         assertNotNull(response);
-        assertEquals(TEST_TOKEN, response.getJwtToken());
+        assertEquals(TEST_TOKEN, response.getToken());
     }
 
     @Test
@@ -91,12 +91,12 @@ class AuthServiceTest {
         // 1. Configurar Mocks: Devolver un usuario (simulando que ya existe)
         when(usuarioRepository.findByEmail(anyString())).thenReturn(Optional.of(mockUsuario));
 
-        // 2. Ejecutar y Verificar Excepción: Esperamos que lance una RuntimeException (como está en tu código)
-        assertThrows(RuntimeException.class, () -> authService.register(registerRequest));
+        // 2. Ejecutar y Verificar Excepción: Esperamos que lance la excepción correcta
+        assertThrows(EmailAlreadyExistsException.class, () -> authService.register(registerRequest));
 
         // 3. Verificar: Que NO se intentó guardar ni codificar
-        verify(usuarioRepository, times(0)).save(any(Usuario.class));
-        verify(passwordEncoder, times(0)).encode(anyString());
+        verify(usuarioRepository, never()).save(any(Usuario.class));
+        verify(passwordEncoder, never()).encode(anyString());
     }
 
     // =========================================================================================
@@ -122,7 +122,7 @@ class AuthServiceTest {
         verify(jwtService, times(1)).generateToken(mockUsuario);
 
         assertNotNull(response);
-        assertEquals(TEST_TOKEN, response.getJwtToken());
+        assertEquals(TEST_TOKEN, response.getToken());
     }
 
     @Test

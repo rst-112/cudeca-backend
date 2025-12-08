@@ -9,7 +9,8 @@ application:
   security:
     jwt:
       # Clave secreta para firmar los tokens (Base64)
-      secret-key: rN8skz5ksunBA2xbiWLw7ir+wrBou6Zx8HppAlkJUh0=
+      # Se lee de la variable de entorno JWT_SECRET_KEY. Si no existe, usa el valor por defecto.
+      secret-key: ${JWT_SECRET_KEY:rN8skz5ksunBA2xbiWLw7ir+wrBou6Zx8HppAlkJUh0=}
       expiration: 86400000 # 24 horas
 
 ---
@@ -105,11 +106,9 @@ logging:
 application:
   security:
     jwt:
-      # Genera una clave segura de al menos 256 bits (ej. 32 caracteres) y codifícala en Base64
-      # Ejemplo: "482d4f25e8a5b29f7c0d1e3a6b5c4d3e2f1g0h9i8j7k6l5m4n3o2p1q0r9s8t7u" (MUCHO MÁS LARGA)
-      secret-key: B4-CLAVE-SECRETA-SUPER-LARGA-Y-COMPLEJA-DE-SAPOSOFT
+      # En producción, esta clave DEBE ser establecida a través de la variable de entorno JWT_SECRET_KEY.
+      secret-key: ${JWT_SECRET_KEY:B4-CLAVE-SECRETA-SUPER-LARGA-Y-COMPLEJA-DE-SAPOSOFT}
       expiration: 86400000 # 24 horas en milisegundos
 
 server:
   port: ${PORT:8080}
-

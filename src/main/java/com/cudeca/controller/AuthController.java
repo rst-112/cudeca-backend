@@ -3,7 +3,7 @@ package com.cudeca.controller;
 import com.cudeca.dto.usuario.AuthResponse;
 import com.cudeca.dto.usuario.LoginRequest;
 import com.cudeca.dto.usuario.RegisterRequest;
-import com.cudeca.service.impl.AuthServiceImpl;
+import com.cudeca.service.IAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     // Inyección de la dependencia del servicio de lógica de negocio
-    private final AuthServiceImpl authService;
+    private final IAuthService authService;
 
     /**
      * Endpoint de Registro de Usuario.
@@ -33,7 +33,6 @@ public class AuthController {
      * @return 200 OK con el token JWT de la sesión iniciada.
      */
     @PostMapping("/register")
-    // ⚠️ CORRECCIÓN CLAVE: Añadir @Valid. Sin esto, las reglas del DTO se ignoran.
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
@@ -46,7 +45,7 @@ public class AuthController {
      * @return 200 OK con el token JWT para la sesión.
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         // Delega la verificación de credenciales al AuthService.
         return ResponseEntity.ok(authService.login(request));
     }

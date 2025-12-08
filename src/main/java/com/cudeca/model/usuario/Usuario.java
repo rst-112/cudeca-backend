@@ -1,55 +1,168 @@
 package com.cudeca.model.usuario;
 
+import com.cudeca.model.negocio.Monedero;
+import com.cudeca.model.negocio.SolicitudRetiro;
+import com.cudeca.model.negocio.Suscripcion;
+import com.cudeca.model.negocio.ValidacionEntrada;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+@Entity
+@Table(name = "USUARIOS")
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-@Table(name = "usuarios") // Nombre simple para evitar líos
+@Builder
 public class Usuario implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, length = 100)
     private String nombre;
-    @Column(unique = true)
+
+    @Column(nullable = false, unique = true, length = 150)
     private String email;
+
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    // ...
+    private String direccion;
 
-    // ⚠️ EL MÉTODO DE USERDETAILS DEBE DEVOLVER EL HASH
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "USUARIOS_ROLES",
+            joinColumns = @JoinColumn(name = "usuario_id"),
+            inverseJoinColumns = @JoinColumn(name = "rol_id")
+    )
+    @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Rol> roles = new HashSet<>();
+
+    // --- CAMPOS DE "COMPRADOR" ---
+
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    private Monedero monedero;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    private Set<SolicitudRetiro> solicitudesRetiro = new HashSet<>();
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private List<Suscripcion> suscripciones = new ArrayList<>();
+
+    // --- CAMPOS DE "PERSONAL" ---
+    @OneToMany(mappedBy = "personalValidador", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private List<ValidacionEntrada> validacionesRealizadas = new ArrayList<>();
+
+    // --- CAMPOS DE "ADMIN" ---
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private List<Exportacion> exportaciones = new ArrayList<>();
+
+    // --- AUDITORÍA Y OTROS ---
+    @OneToMany(mappedBy = "usuario")
+    @Builder.Default
+    private Set<Auditoria> auditorias = new HashSet<>();
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private Set<VerificacionCuenta> verificaciones = new HashSet<>();
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private List<DatosFiscales> datosFiscales = new ArrayList<>();
+
+    // --- CICLO DE VIDA ---
+    @PrePersist
+    public void prePersist() {
+        if (this.createdAt == null) this.createdAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    // --- MÉTODOS ---
+    public void actualizarPerfil(String nuevoNombre, String nuevaDireccion) {
+        if (nuevoNombre != null && !nuevoNombre.isBlank()) {
+            this.nombre = nuevoNombre;
+        }
+        if (nuevaDireccion != null) {
+            this.direccion = nuevaDireccion;
+        }
+    }
+
+    public boolean esAdmin() {
+        return roles.stream().anyMatch(r -> "ADMINISTRADOR".equalsIgnoreCase(r.getNombre()));
+    }
+
+    // --- IMPLEMENTACIÓN DE USERDETAILS ---
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return roles.stream()
+                .map(rol -> new SimpleGrantedAuthority(rol.getNombre()))
+                .collect(Collectors.toList());
+    }
+
     @Override
     public String getPassword() {
         return this.passwordHash;
     }
 
-    // Métodos de UserDetails (Obligatorios)
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority("ROLE_USER")); // Rol por defecto
+    public String getUsername() {
+        return this.email;
     }
+
     @Override
-    public String getUsername() { return email; }
+    public boolean isAccountNonExpired() {
+        return true; // O implementa tu propia lógica
+    }
+
     @Override
-    public boolean isAccountNonExpired() { return true; }
+    public boolean isAccountNonLocked() {
+        return true; // O implementa tu propia lógica
+    }
+
     @Override
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isCredentialsNonExpired() {
+        return true; // O implementa tu propia lógica
+    }
+
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
-    @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() {
+        return true; // O implementa tu propia lógica (ej. basado en verificaciones)
+    }
 }

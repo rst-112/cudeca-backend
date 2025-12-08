@@ -1,6 +1,7 @@
 package com.cudeca.service.impl;
 
 import com.cudeca.repository.UsuarioRepository;
+import com.cudeca.service.IUserService;
 import lombok.RequiredArgsConstructor; // Usamos Lombok para el constructor
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor // Genera el constructor para UsuarioRepository
-public class UserService implements UserDetailsService {
+public class UserService implements IUserService {
 
     // Inyección del repositorio de datos para acceder a la tabla 'usuarios'.
     // Esto es el punto de conexión con la persistencia (JpaRepository).

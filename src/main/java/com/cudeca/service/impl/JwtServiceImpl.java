@@ -1,5 +1,6 @@
 package com.cudeca.service.impl;
 
+import com.cudeca.service.IJwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -20,7 +21,7 @@ import java.util.function.Function;
  * Lee la clave secreta y el tiempo de expiración desde application.yml.
  */
 @Service
-public class JwtServiceImpl {
+public class JwtServiceImpl implements IJwtService {
 
     // Se inyecta la clave secreta (Base64) desde la configuración de la aplicación.
     @Value("${application.security.jwt.secret-key}")
@@ -37,6 +38,7 @@ public class JwtServiceImpl {
      * @param userDetails Los detalles del usuario (email/username, roles, etc.).
      * @return El token JWT firmado como String.
      */
+    @Override
     public String generateToken(UserDetails userDetails) {
         return generateToken(new HashMap<>(), userDetails);
     }
@@ -48,6 +50,7 @@ public class JwtServiceImpl {
      * @param userDetails Detalles del usuario.
      * @return El token JWT firmado.
      */
+    @Override
     public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
         return Jwts.builder()
                 .setClaims(extraClaims)
@@ -65,6 +68,7 @@ public class JwtServiceImpl {
      * @param userDetails Los detalles del usuario (cargados desde UserService).
      * @return true si el token es válido y no ha expirado.
      */
+    @Override
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
@@ -77,6 +81,7 @@ public class JwtServiceImpl {
     /**
      * Extrae el username (Subject) del payload del token.
      */
+    @Override
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -90,6 +95,7 @@ public class JwtServiceImpl {
     }
 
     // Método genérico para extraer cualquier claim (ej. "roles", "userId")
+    @Override
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);

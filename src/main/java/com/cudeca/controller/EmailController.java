@@ -1,6 +1,6 @@
 package com.cudeca.controller;
 
-import com.cudeca.service.EmailService;
+import com.cudeca.service.IEmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -12,7 +12,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class EmailController {
 
-    private final EmailService emailService;
+    private final IEmailService emailService;
 
     @GetMapping("/api/public/send-test-email")
     public Map<String, String> sendTestEmail(@RequestParam(defaultValue = "test@example.com") String to) {

@@ -5,8 +5,10 @@ import com.cudeca.dto.usuario.LoginRequest;
 import com.cudeca.dto.usuario.RegisterRequest;
 import com.cudeca.model.usuario.Usuario;
 import com.cudeca.repository.UsuarioRepository;
+import com.cudeca.service.IAuthService;
+import com.cudeca.service.IJwtService;
+import com.cudeca.service.IUserService;
 import com.cudeca.service.impl.ServiceExceptions.EmailAlreadyExistsException;
-import com.cudeca.service.impl.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,13 +22,13 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class AuthServiceImpl {
+public class AuthServiceImpl implements IAuthService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtServiceImpl jwtService;
+    private final IJwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final UserService userService;
+    private final IUserService userService;
 
     /**
      * Registra un nuevo usuario en el sistema.
@@ -35,6 +37,7 @@ public class AuthServiceImpl {
      * @param request DTO con los datos del registro (nombre, email, password).
      * @return AuthResponse con el token JWT generado.
      */
+    @Override
     public AuthResponse register(RegisterRequest request) {
 
         // 1. Creación de la entidad Usuario
@@ -68,6 +71,7 @@ public class AuthServiceImpl {
      * @param request DTO con las credenciales (email, password).
      * @return AuthResponse con el token JWT si las credenciales son válidas.
      */
+    @Override
     public AuthResponse login(LoginRequest request) {
         // 1. Delegamos la autenticación a Spring Security
         // Si la contraseña no coincide o el usuario no existe, este método lanzará una excepción (BadCredentialsException).
