@@ -52,4 +52,64 @@ class EmailServiceImplTest {
 
         verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }
+
+    @Test
+    void sendTestEmail_WithMultipleRecipients() {
+        // Arrange
+        String email1 = "user1@cudeca.org";
+        String email2 = "user2@cudeca.org";
+
+        // Act
+        emailServiceImpl.sendTestEmail(email1);
+        emailServiceImpl.sendTestEmail(email2);
+
+        // Assert
+        verify(mailSender, times(2)).send(any(SimpleMailMessage.class));
+    }
+
+    @Test
+    void sendTestEmail_MessageHasCorrectSubject() {
+        // Arrange
+        String destinatario = "test@cudeca.org";
+
+        // Act
+        emailServiceImpl.sendTestEmail(destinatario);
+
+        // Assert
+        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+        assertThat(captor.getValue().getSubject()).isNotEmpty();
+        assertThat(captor.getValue().getSubject()).contains("CUDECA");
+    }
+
+    @Test
+    void sendTestEmail_MessageHasText() {
+        // Arrange
+        String destinatario = "test@cudeca.org";
+
+        // Act
+        emailServiceImpl.sendTestEmail(destinatario);
+
+        // Assert
+        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+        assertThat(captor.getValue().getText()).isNotNull();
+        assertThat(captor.getValue().getText()).isNotEmpty();
+    }
+
+    @Test
+    void sendTestEmail_ToAddressMatchesRecipient() {
+        // Arrange
+        String destinatario = "specific@cudeca.org";
+
+        // Act
+        emailServiceImpl.sendTestEmail(destinatario);
+
+        // Assert
+        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mailSender).send(captor.capture());
+        String[] recipients = captor.getValue().getTo();
+        assertThat(recipients).hasSize(1);
+        assertThat(recipients[0]).isEqualTo(destinatario);
+    }
 }

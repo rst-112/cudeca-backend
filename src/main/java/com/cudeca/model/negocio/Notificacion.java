@@ -41,7 +41,7 @@ public class Notificacion {
     private String destino;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "payload_json", columnDefinition = "jsonb")
+    @Column(name = "payload_json", columnDefinition = "TEXT")
     private String payloadJson;
 
     // --- ESTADO Y CONTROL ---
