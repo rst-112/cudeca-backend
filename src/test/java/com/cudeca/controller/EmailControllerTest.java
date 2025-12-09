@@ -1,8 +1,9 @@
 package com.cudeca.controller;
 
-import com.cudeca.service.impl.EmailServiceImpl;
+import com.cudeca.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
 
@@ -15,37 +16,39 @@ import static org.mockito.Mockito.*;
  */
 class EmailControllerTest {
 
-    private EmailServiceImpl emailServiceImpl;
+    private EmailService emailService;
     private EmailController controller;
 
     @BeforeEach
     void setUp() {
-        emailServiceImpl = mock(EmailServiceImpl.class);
-        controller = new EmailController(emailServiceImpl);
+        emailService = mock(EmailService.class);
+        controller = new EmailController(emailService);
     }
 
     @Test
-    void sendTestEmail_ShouldReturnOkResponseAndInvokeService() {
+    void sendTestEmail_ShouldReturnOkResponseAndInvokeService() throws Exception {
         // Arrange
         String destinatario = "user@prueba.com";
 
         // Act
-        Map<String, String> response = controller.sendTestEmail(destinatario);
+        ResponseEntity<Map<String, String>> response = controller.sendTestEmail(destinatario);
 
         // Assert
-        verify(emailServiceImpl, times(1)).sendTestEmail(destinatario);
-        assertThat(response)
+        verify(emailService, times(1)).sendTestEmail(destinatario);
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody())
                 .containsEntry("status", "ok")
                 .containsEntry("message", "Correo de prueba enviado a " + destinatario);
     }
 
     @Test
-    void sendTestEmail_ShouldUseDefaultValue_WhenNoParamProvided() {
+    void sendTestEmail_ShouldUseDefaultValue_WhenNoParamProvided() throws Exception {
         // Act
-        Map<String, String> response = controller.sendTestEmail("test@example.com");
+        ResponseEntity<Map<String, String>> response = controller.sendTestEmail("test@example.com");
 
         // Assert
-        verify(emailServiceImpl, times(1)).sendTestEmail("test@example.com");
-        assertThat(response.get("status")).isEqualTo("ok");
+        verify(emailService, times(1)).sendTestEmail("test@example.com");
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        assertThat(response.getBody().get("status")).isEqualTo("ok");
     }
 }

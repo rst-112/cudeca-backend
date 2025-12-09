@@ -35,11 +35,17 @@ spring:
     port: 1025
     username: ""
     password: ""
+    default-encoding: UTF-8
     properties:
       mail:
         smtp:
           auth: false
           starttls.enable: false
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        mime:
+          charset: UTF-8
 
   springdoc:
     swagger-ui:
@@ -84,15 +90,22 @@ spring:
     locations: classpath:db/migration
 
   mail:
-    host: localhost
-    port: 1025
-    username: ""
-    password: ""
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    default-encoding: UTF-8
     properties:
       mail:
         smtp:
-          auth: false
-          starttls.enable: false
+          auth: ${SPRING_MAIL_SMTP_AUTH:true}
+          starttls.enable: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:true}
+          starttls.required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        mime:
+          charset: UTF-8
 
   springdoc:
     swagger-ui:
