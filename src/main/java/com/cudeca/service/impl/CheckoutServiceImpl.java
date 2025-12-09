@@ -24,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Implementación del servicio de Checkout.
@@ -35,8 +34,12 @@ import java.util.List;
 public class CheckoutServiceImpl implements CheckoutService {
 
     private static final Logger log = LoggerFactory.getLogger(CheckoutServiceImpl.class);
+    private static final String COMPRA_NO_ENCONTRADA = "Compra no encontrada: ";
+<<<<<<< Updated upstream
 
     private static final String COMPRA_NO_ENCONTRADA = "Compra no encontrada: ";
+=======
+>>>>>>> Stashed changes
 
     private final CompraRepository compraRepository;
     private final UsuarioRepository usuarioRepository;
@@ -177,21 +180,23 @@ public class CheckoutServiceImpl implements CheckoutService {
     private ArticuloCompra crearArticulo(CheckoutRequest.ItemDTO itemDTO, Compra compra) {
         TipoItem tipoItem = TipoItem.valueOf(itemDTO.getTipo().toUpperCase());
 
-        switch (tipoItem) {
-            case ENTRADA:
-                return crearArticuloEntrada(itemDTO, compra);
-            case DONACION:
-                return crearArticuloDonacion(itemDTO, compra);
-            default:
-                throw new IllegalArgumentException("Tipo de item no soportado: " + itemDTO.getTipo());
-        }
+        return switch (tipoItem) {
+            case ENTRADA -> crearArticuloEntrada(itemDTO);
+            case DONACION -> crearArticuloDonacion(itemDTO);
+            case SORTEO -> {
+                // TODO: Implementar soporte para SORTEO
+                yield crearArticuloEntrada(itemDTO);
+            }
+        };
     }
 
-    private ArticuloEntrada crearArticuloEntrada(CheckoutRequest.ItemDTO itemDTO, Compra compra) {
+    private ArticuloEntrada crearArticuloEntrada(CheckoutRequest.ItemDTO itemDTO) {
         TipoEntrada tipoEntrada = tipoEntradaRepository.findById(itemDTO.getReferenciaId())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "TipoEntrada no encontrado: " + itemDTO.getReferenciaId()));
 
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
         ArticuloEntrada articulo = ArticuloEntrada.builder()
                 .tipoEntrada(tipoEntrada)
                 .entradasEmitidas(new ArrayList<>())
@@ -219,6 +224,40 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .solicitaCertificado(false)
                 .destino("General") // Valor por defecto
                 .build();
+=======
+        ArticuloEntrada articulo = new ArticuloEntrada();
+        articulo.setTipoEntrada(tipoEntrada);
+        articulo.setCantidad(itemDTO.getCantidad());
+        articulo.setPrecioUnitario(itemDTO.getPrecio() != null ?
+                BigDecimal.valueOf(itemDTO.getPrecio()) : tipoEntrada.getPrecioTotal());
+        articulo.setSolicitaCertificado(false);
+        articulo.setEntradasEmitidas(new ArrayList<>());
+        return articulo;
+    }
+
+=======
+        ArticuloEntrada articulo = new ArticuloEntrada();
+        articulo.setTipoEntrada(tipoEntrada);
+        articulo.setCantidad(itemDTO.getCantidad());
+        articulo.setPrecioUnitario(itemDTO.getPrecio() != null ?
+                BigDecimal.valueOf(itemDTO.getPrecio()) : tipoEntrada.getPrecioTotal());
+        articulo.setSolicitaCertificado(false);
+        articulo.setEntradasEmitidas(new ArrayList<>());
+        return articulo;
+    }
+
+>>>>>>> Stashed changes
+    private ArticuloDonacion crearArticuloDonacion(CheckoutRequest.ItemDTO itemDTO) {
+        ArticuloDonacion articulo = new ArticuloDonacion();
+        articulo.setCantidad(itemDTO.getCantidad());
+        articulo.setPrecioUnitario(BigDecimal.valueOf(itemDTO.getPrecio()));
+        articulo.setSolicitaCertificado(false);
+        articulo.setDestino("General"); // Valor por defecto
+        return articulo;
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
     }
 
     private BigDecimal calcularTotal(Compra compra, Double donacionExtra) {
@@ -250,16 +289,13 @@ public class CheckoutServiceImpl implements CheckoutService {
     }
 
     private String obtenerMensajeEstado(EstadoCompra estado) {
-        switch (estado) {
-            case PENDIENTE:
-                return "Compra creada. Pendiente de pago.";
-            case COMPLETADA:
-                return "Compra completada exitosamente.";
-            case CANCELADA:
-                return "Compra cancelada.";
-            default:
-                return "Estado: " + estado.name();
-        }
+        return switch (estado) {
+            case PENDIENTE -> "Compra creada. Pendiente de pago.";
+            case COMPLETADA -> "Compra completada exitosamente.";
+            case CANCELADA -> "Compra cancelada.";
+            case PARCIAL_REEMBOLSADA -> "Compra parcialmente reembolsada.";
+            case REEMBOLSADA -> "Compra completamente reembolsada.";
+        };
     }
 }
 
