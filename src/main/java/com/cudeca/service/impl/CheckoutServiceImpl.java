@@ -36,6 +36,8 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     private static final Logger log = LoggerFactory.getLogger(CheckoutServiceImpl.class);
 
+    private static final String COMPRA_NO_ENCONTRADA = "Compra no encontrada: ";
+
     private final CompraRepository compraRepository;
     private final UsuarioRepository usuarioRepository;
     private final InvitadoRepository invitadoRepository;
@@ -190,24 +192,30 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "TipoEntrada no encontrado: " + itemDTO.getReferenciaId()));
 
-        return ArticuloEntrada.builder()
-                .compra(compra)
+        ArticuloEntrada articulo = ArticuloEntrada.builder()
                 .tipoEntrada(tipoEntrada)
-                .cantidad(itemDTO.getCantidad())
-                .precioUnitario(itemDTO.getPrecio() != null ?
-                        BigDecimal.valueOf(itemDTO.getPrecio()) : tipoEntrada.getPrecio())
-                .tipo(TipoItem.ENTRADA)
-                .solicitaCertificado(false)
                 .entradasEmitidas(new ArrayList<>())
                 .build();
+        
+        articulo.setCompra(compra);
+        // articulo.setTipo(TipoItem.ENTRADA);  <-- BORRADO (JPA lo hace automático)
+        
+        articulo.setCantidad(itemDTO.getCantidad());
+        articulo.setSolicitaCertificado(false);
+        
+        BigDecimal precio = itemDTO.getPrecio() != null ?
+                BigDecimal.valueOf(itemDTO.getPrecio()) : tipoEntrada.getCosteBase();
+        articulo.setPrecioUnitario(precio);
+        
+        return articulo;
     }
 
     private ArticuloDonacion crearArticuloDonacion(CheckoutRequest.ItemDTO itemDTO, Compra compra) {
         return ArticuloDonacion.builder()
-                .compra(compra)
+                //.compra(compra)
                 .cantidad(itemDTO.getCantidad())
                 .precioUnitario(BigDecimal.valueOf(itemDTO.getPrecio()))
-                .tipo(TipoItem.DONACION)
+                //.tipo(TipoItem.DONACION)
                 .solicitaCertificado(false)
                 .destino("General") // Valor por defecto
                 .build();
