@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +46,8 @@ class AsientoConcurrencyTest {
     @Autowired
     private TipoEntradaRepository tipoEntradaRepository;
 
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     private Asiento asientoCompartido;
     private ZonaRecinto zona;
@@ -232,7 +234,7 @@ class AsientoConcurrencyTest {
         asientoRepository.save(asientoCompartido);
 
         // Act & Assert
-        assertThatThrownBy(() -> intentarBloquearAsiento(asientoCompartido.getId(), 999))
+        assertThatThrownBy(() -> intentarBloquearAsientoConExcepcion(asientoCompartido.getId(), 999))
                 .isInstanceOf(AsientoNoDisponibleException.class)
                 .hasMessageContaining("no está disponible");
     }
@@ -245,7 +247,7 @@ class AsientoConcurrencyTest {
         asientoRepository.save(asientoCompartido);
 
         // Act & Assert
-        assertThatThrownBy(() -> intentarBloquearAsiento(asientoCompartido.getId(), 999))
+        assertThatThrownBy(() -> intentarBloquearAsientoConExcepcion(asientoCompartido.getId(), 999))
                 .isInstanceOf(AsientoNoDisponibleException.class)
                 .hasMessageContaining("no está disponible");
     }
@@ -326,41 +328,56 @@ class AsientoConcurrencyTest {
     void testFindAllByIdWithLock_BloqueoReal() throws Exception {
         // Arrange
         ExecutorService executor = Executors.newFixedThreadPool(2);
-        CountDownLatch thread1Bloqueado = new CountDownLatch(1);
+        CountDownLatch thread1Iniciado = new CountDownLatch(1);
         CountDownLatch thread2PuedeEmpezar = new CountDownLatch(1);
         AtomicInteger ordenDeEjecucion = new AtomicInteger(0);
+        AtomicInteger thread2Bloqueado = new AtomicInteger(0);
 
-        // Thread 1: Bloquea el asiento con lock y espera
+        // Thread 1: Bloquea el asiento con lock y espera DENTRO DE LA TRANSACCIÓN
         Future<Integer> future1 = executor.submit(() -> {
-            List<Asiento> asientos = asientoRepository.findAllByIdWithLock(
-                List.of(asientoCompartido.getId())
-            );
+            return transactionTemplate.execute(status -> {
+                try {
+                    List<Asiento> asientos = asientoRepository.findAllByIdWithLock(
+                        List.of(asientoCompartido.getId())
+                    );
 
-            thread1Bloqueado.countDown(); // Avisa que tiene el lock
-            thread2PuedeEmpezar.await(); // Espera señal para continuar
+                    thread1Iniciado.countDown(); // Avisa que tiene el lock
+                    thread2PuedeEmpezar.await(3, TimeUnit.SECONDS); // Espera señal (con timeout)
 
-            // Modifica el asiento
-            asientos.get(0).bloquear();
-            asientoRepository.saveAll(asientos);
+                    // Modifica el asiento
+                    asientos.get(0).bloquear();
+                    asientoRepository.saveAll(asientos);
 
-            return ordenDeEjecucion.incrementAndGet(); // Debería ser 1
+                    return ordenDeEjecucion.incrementAndGet(); // Debería ser 1
+                } catch (InterruptedException e) {
+                    status.setRollbackOnly();
+                    throw new RuntimeException(e);
+                }
+            });
         });
 
         // Esperar a que thread1 obtenga el lock
-        thread1Bloqueado.await();
+        thread1Iniciado.await(2, TimeUnit.SECONDS);
         Thread.sleep(100); // Asegurar que thread1 tiene el lock
 
         // Thread 2: Intenta obtener el mismo asiento (debería esperar)
         Future<Integer> future2 = executor.submit(() -> {
-            List<Asiento> asientos = asientoRepository.findAllByIdWithLock(
-                List.of(asientoCompartido.getId())
-            );
+            return transactionTemplate.execute(status -> {
+                thread2Bloqueado.set(1); // Marca que está intentando
+                List<Asiento> asientos = asientoRepository.findAllByIdWithLock(
+                    List.of(asientoCompartido.getId())
+                );
 
-            // Este código NO debería ejecutarse hasta que thread1 libere el lock
-            return ordenDeEjecucion.incrementAndGet(); // Debería ser 2
+                // Este código NO debería ejecutarse hasta que thread1 libere el lock
+                return ordenDeEjecucion.incrementAndGet(); // Debería ser 2
+            });
         });
 
-        Thread.sleep(200); // Dar tiempo a thread2 para intentar acceder
+        Thread.sleep(300); // Dar tiempo a thread2 para intentar acceder y quedar bloqueado
+
+        // Verificar que thread2 está intentando pero no ha incrementado el contador
+        assertThat(thread2Bloqueado.get()).isEqualTo(1);
+        assertThat(ordenDeEjecucion.get()).isEqualTo(0); // Ninguno ha terminado aún
 
         // Liberar thread1
         thread2PuedeEmpezar.countDown();
@@ -373,15 +390,59 @@ class AsientoConcurrencyTest {
         assertThat(orden2).isEqualTo(2); // Thread2 espera y termina segundo
 
         executor.shutdown();
+        executor.awaitTermination(5, TimeUnit.SECONDS);
     }
 
     /**
      * Método auxiliar que simula el bloqueo transaccional de un asiento.
      * Este método debería estar en CheckoutService en producción.
+     * Usa TransactionTemplate para funcionar correctamente en threads del ExecutorService.
      */
-    @Transactional
     boolean intentarBloquearAsiento(Long asientoId, int threadId) {
         try {
+            return transactionTemplate.execute(status -> {
+                try {
+                    // 1. Obtener asiento con bloqueo PESSIMISTIC_WRITE
+                    List<Asiento> asientos = asientoRepository.findAllByIdWithLock(List.of(asientoId));
+
+                    if (asientos.isEmpty()) {
+                        throw new IllegalArgumentException("Asiento no encontrado");
+                    }
+
+                    Asiento asiento = asientos.get(0);
+
+                    // 2. Verificar que está LIBRE
+                    if (asiento.getEstado() != EstadoAsiento.LIBRE) {
+                        throw new AsientoNoDisponibleException(
+                            "El asiento " + asiento.getCodigoEtiqueta() + " no está disponible"
+                        );
+                    }
+
+                    // 3. Bloquear asiento
+                    asiento.bloquear();
+                    asientoRepository.save(asiento);
+
+                    System.out.println("Thread " + threadId + " bloqueó exitosamente el asiento " +
+                                     asiento.getCodigoEtiqueta());
+                    return true;
+
+                } catch (AsientoNoDisponibleException e) {
+                    System.out.println("Thread " + threadId + " falló: " + e.getMessage());
+                    status.setRollbackOnly();
+                    return false;
+                }
+            });
+        } catch (Exception e) {
+            System.out.println("Thread " + threadId + " error inesperado: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Método auxiliar que lanza excepciones para tests que esperan AsientoNoDisponibleException.
+     */
+    void intentarBloquearAsientoConExcepcion(Long asientoId, int threadId) {
+        transactionTemplate.execute(status -> {
             // 1. Obtener asiento con bloqueo PESSIMISTIC_WRITE
             List<Asiento> asientos = asientoRepository.findAllByIdWithLock(List.of(asientoId));
 
@@ -405,11 +466,7 @@ class AsientoConcurrencyTest {
             System.out.println("Thread " + threadId + " bloqueó exitosamente el asiento " +
                              asiento.getCodigoEtiqueta());
             return true;
-
-        } catch (AsientoNoDisponibleException e) {
-            System.out.println("Thread " + threadId + " falló: " + e.getMessage());
-            return false;
-        }
+        });
     }
 }
 

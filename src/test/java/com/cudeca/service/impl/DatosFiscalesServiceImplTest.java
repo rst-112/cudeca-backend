@@ -109,7 +109,6 @@ class DatosFiscalesServiceImplTest {
     void testCrearDatosFiscales_NIFInvalido() {
         // Arrange
         datosFiscales.setNif("INVALIDO");
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
 
         // Act & Assert
         assertThatThrownBy(() ->
@@ -126,7 +125,6 @@ class DatosFiscalesServiceImplTest {
     void testCrearDatosFiscales_SinNombreCompleto() {
         // Arrange
         datosFiscales.setNombreCompleto(null);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
 
         // Act & Assert
         assertThatThrownBy(() ->
@@ -307,11 +305,33 @@ class DatosFiscalesServiceImplTest {
     }
 
     @Test
-    @DisplayName("Debe validar NIE válido")
-    void testValidarNIF_NIEValido() {
+    @DisplayName("Debe validar NIE válido con X")
+    void testValidarNIF_NIEValidoX() {
         // Act & Assert
-        assertThat(datosFiscalesService.validarNIF("X1234567L")).isTrue();
-        assertThat(datosFiscalesService.validarNIF("Y7654321Z")).isTrue();
+        // X1234567 -> 01234567 -> 1234567 % 23 = 19 -> L
+        assertThat(datosFiscalesService.validarNIF("X1234567L"))
+            .withFailMessage("NIE X1234567L debería ser válido")
+            .isTrue();
+    }
+
+    @Test
+    @DisplayName("Debe validar NIE válido con Y")
+    void testValidarNIF_NIEValidoY() {
+        // Act & Assert
+        // Y7654321 -> 17654321 -> 17654321 % 23 = 4 -> G
+        assertThat(datosFiscalesService.validarNIF("Y7654321G"))
+            .withFailMessage("NIE Y7654321G debería ser válido")
+            .isTrue();
+    }
+
+    @Test
+    @DisplayName("Debe validar NIE válido con Z")
+    void testValidarNIF_NIEValidoZ() {
+        // Act & Assert
+        // Z5555555 -> 25555555 -> 25555555 % 23 = 2 -> W
+        assertThat(datosFiscalesService.validarNIF("Z5555555W"))
+            .withFailMessage("NIE Z5555555W debería ser válido")
+            .isTrue();
     }
 
     @Test
@@ -382,9 +402,6 @@ class DatosFiscalesServiceImplTest {
         datosFiscales.setPais("Portugal");
         datosFiscales.setNif("123456789"); // NIF portugués (formato simplificado)
 
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        // Para NIFs internacionales, podemos ser más permisivos en la validación
-        when(datosFiscalesRepository.save(any(DatosFiscales.class))).thenReturn(datosFiscales);
 
         // Act & Assert - Verificamos que acepta diferentes formatos según el país
         assertThat(datosFiscales.getPais()).isEqualTo("Portugal");

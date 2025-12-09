@@ -184,30 +184,42 @@ public class DatosFiscalesServiceImpl implements DatosFiscalesService {
                 // DNI estándar
                 numero = nif.substring(0, 8);
                 letraProporcionada = nif.charAt(8);
+                log.debug("Validando DNI: nif={}, numero={}, letra={}", nif, numero, letraProporcionada);
             } else if (nif.matches("^[XYZ]\\d{7}[A-Z]$")) {
-                // NIE
+                // NIE: Se reemplaza X=0, Y=1, Z=2 y se calcula con los 7 dígitos + letra
                 String primeraLetra = nif.substring(0, 1);
-                numero = nif.substring(1, 8);
+                // Extraer los 7 dígitos del NIE (posiciones 1-7, total 7 dígitos)
+                String digitosNIE = nif.substring(1, 8);
 
                 // Convertir primera letra a número: X=0, Y=1, Z=2
-                numero = switch (primeraLetra) {
-                    case "X" -> "0" + numero;
-                    case "Y" -> "1" + numero;
-                    case "Z" -> "2" + numero;
-                    default -> numero;
+                String digitoInicial = switch (primeraLetra) {
+                    case "X" -> "0";
+                    case "Y" -> "1";
+                    case "Z" -> "2";
+                    default -> "0";
                 };
 
+                // Formar el número completo: digitoInicial (1 dígito) + digitosNIE (7 dígitos) = 8 dígitos
+                numero = digitoInicial + digitosNIE;
                 letraProporcionada = nif.charAt(8);
+                log.debug("Validando NIE: nif={}, digitosNIE={}, numero={}, letra={}",
+                         nif, digitosNIE, numero, letraProporcionada);
             } else {
                 // CIF u otro formato - aceptar sin validación adicional
+                log.debug("Validando CIF u otro formato: nif={}", nif);
                 return true;
             }
 
             // Calcular letra correcta
             int numeroEntero = Integer.parseInt(numero);
-            char letraCorrecta = letras.charAt(numeroEntero % 23);
+            int resto = numeroEntero % 23;
+            char letraCorrecta = letras.charAt(resto);
+            boolean valido = letraCorrecta == letraProporcionada;
 
-            return letraCorrecta == letraProporcionada;
+            log.info("VALIDACIÓN NIE/DNI: nif={}, numero={}, numeroEntero={}, resto={}, letraCorrecta={}, letraProporcionada={}, valido={}",
+                     nif, numero, numeroEntero, resto, letraCorrecta, letraProporcionada, valido);
+
+            return valido;
 
         } catch (Exception e) {
             log.warn("Error al validar letra de control del NIF: {}", nif, e);

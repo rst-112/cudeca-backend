@@ -3,8 +3,8 @@ package com.cudeca.service.impl;
 import com.cudeca.dto.CheckoutRequest;
 import com.cudeca.dto.CheckoutResponse;
 import com.cudeca.model.enums.EstadoCompra;
-import com.cudeca.model.negocio.ArticuloCompra;
 import com.cudeca.model.negocio.Compra;
+import com.cudeca.model.evento.TipoEntrada;
 import com.cudeca.model.usuario.Comprador;
 import com.cudeca.model.usuario.Invitado;
 import com.cudeca.repository.CompraRepository;
@@ -49,6 +49,9 @@ class CheckoutServiceImplTest {
 
     @Mock
     private TipoEntradaRepository tipoEntradaRepository;
+
+    @Mock
+    private com.cudeca.repository.AsientoRepository asientoRepository;
 
     @InjectMocks
     private CheckoutServiceImpl checkoutService;

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/perfil")
+@RequestMapping("/api/perfil-simulado")
 public class UserProfileController {
 
     @GetMapping("/{usuarioId}/entradas")

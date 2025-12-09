@@ -43,10 +43,10 @@ public class Notificacion {
     @Column(nullable = false, length = 255)
     private String destino;
 
-    // SQL: payload_json JSONB
+    // SQL: payload_json JSONB (en PostgreSQL), TEXT (en H2)
     // Guardamos el JSON como String para simplificar el mapeo en Java
-    // (Spring lo maneja bien, aunque en BD sea jsonb)
-    @Column(name = "payload_json", columnDefinition = "jsonb")
+    @Lob
+    @Column(name = "payload_json")
     private String payloadJson;
 
     // --- ESTADO Y CONTROL ---

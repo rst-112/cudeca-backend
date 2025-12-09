@@ -36,8 +36,9 @@ public class Recibo {
     private BigDecimal total;
 
     // SQL: resumen TEXT
-    // Usamos columnDefinition para asegurar que soporte textos largos en Postgres
-    @Column(columnDefinition = "TEXT")
+    // Usamos @Lob para textos largos compatibles tanto con PostgreSQL como con H2
+    @Lob
+    @Column(name = "resumen")
     private String resumen;
 
     // --- CICLO DE VIDA ---

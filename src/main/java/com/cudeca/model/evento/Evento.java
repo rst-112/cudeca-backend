@@ -34,7 +34,8 @@ public class Evento {
     @Size(min = 1, max = 150, message = "El nombre debe tener entre 1 y 150 caracteres")
     private String nombre;
 
-    @Column(columnDefinition = "TEXT")
+    @Lob
+    @Column(name = "descripcion")
     private String descripcion;
 
     @Column(name = "fecha_inicio", nullable = false)

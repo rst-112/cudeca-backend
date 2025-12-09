@@ -38,6 +38,9 @@ class PerfilUsuarioServiceImplTest {
     @Mock
     private MonederoRepository monederoRepository;
 
+    @Mock
+    private com.cudeca.repository.CompraRepository compraRepository;
+
     @InjectMocks
     private PerfilUsuarioServiceImpl perfilUsuarioService;
 
@@ -477,7 +480,7 @@ class PerfilUsuarioServiceImplTest {
     void testObtenerEntradasUsuario_SinEntradas() {
         // Arrange
         when(usuarioRepository.existsById(1L)).thenReturn(true);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.Collections.emptyList());
 
         // Act
         var entradas = perfilUsuarioService.obtenerEntradasUsuario(1L);
@@ -574,7 +577,7 @@ class PerfilUsuarioServiceImplTest {
     void testGenerarPDFEntrada_UsuarioSinEntradas() {
         // Arrange
         when(usuarioRepository.existsById(1L)).thenReturn(true);
-        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.Collections.emptyList());
 
         // Act & Assert
         assertThatThrownBy(() -> perfilUsuarioService.generarPDFEntrada(999L, 1L))
