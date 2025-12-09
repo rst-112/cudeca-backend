@@ -2,8 +2,11 @@ package com.cudeca.service.impl;
 
 import com.cudeca.dto.CheckoutRequest;
 import com.cudeca.dto.CheckoutResponse;
+import com.cudeca.exception.AsientoNoDisponibleException;
+import com.cudeca.model.enums.EstadoAsiento;
 import com.cudeca.model.enums.EstadoCompra;
 import com.cudeca.model.enums.TipoItem;
+import com.cudeca.model.evento.Asiento;
 import com.cudeca.model.negocio.ArticuloCompra;
 import com.cudeca.model.negocio.ArticuloDonacion;
 import com.cudeca.model.negocio.ArticuloEntrada;
@@ -11,6 +14,7 @@ import com.cudeca.model.negocio.Compra;
 import com.cudeca.model.evento.TipoEntrada;
 import com.cudeca.model.usuario.Invitado;
 import com.cudeca.model.usuario.Usuario;
+import com.cudeca.repository.AsientoRepository;
 import com.cudeca.repository.CompraRepository;
 import com.cudeca.repository.InvitadoRepository;
 import com.cudeca.repository.TipoEntradaRepository;
@@ -24,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementación del servicio de Checkout.
@@ -42,16 +47,19 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final UsuarioRepository usuarioRepository;
     private final InvitadoRepository invitadoRepository;
     private final TipoEntradaRepository tipoEntradaRepository;
+    private final AsientoRepository asientoRepository;
 
     public CheckoutServiceImpl(
             CompraRepository compraRepository,
             UsuarioRepository usuarioRepository,
             InvitadoRepository invitadoRepository,
-            TipoEntradaRepository tipoEntradaRepository) {
+            TipoEntradaRepository tipoEntradaRepository,
+            AsientoRepository asientoRepository) {
         this.compraRepository = compraRepository;
         this.usuarioRepository = usuarioRepository;
         this.invitadoRepository = invitadoRepository;
         this.tipoEntradaRepository = tipoEntradaRepository;
+        this.asientoRepository = asientoRepository;
     }
 
     @Override
@@ -61,21 +69,26 @@ public class CheckoutServiceImpl implements CheckoutService {
         // 1. Validar datos básicos
         validarCheckoutRequest(request);
 
-        // 2. Crear la compra
+        // 2. BLOQUEO TRANSACCIONAL: Bloquear asientos si se proporcionan IDs
+        if (request.getAsientoIds() != null && !request.getAsientoIds().isEmpty()) {
+            bloquearAsientos(request.getAsientoIds());
+        }
+
+        // 3. Crear la compra
         Compra compra = crearCompra(request);
 
-        // 3. Procesar items del carrito
+        // 4. Procesar items del carrito
         procesarItems(request, compra);
 
-        // 4. Calcular total
+        // 5. Calcular total
         BigDecimal total = calcularTotal(compra, request.getDonacionExtra());
 
-        // 5. Guardar compra
+        // 6. Guardar compra
         compra = compraRepository.save(compra);
 
         log.info("Compra creada con ID: {} y total: {}", compra.getId(), total);
 
-        // 6. Preparar respuesta
+        // 7. Preparar respuesta
         return construirRespuesta(compra, total);
     }
 
@@ -84,7 +97,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         log.info("Confirmando pago para compra ID: {}", compraId);
 
         Compra compra = compraRepository.findById(compraId)
-                .orElseThrow(() -> new IllegalArgumentException("Compra no encontrada: " + compraId));
+                .orElseThrow(() -> new IllegalArgumentException(COMPRA_NO_ENCONTRADA + compraId));
 
         if (compra.getEstado() != EstadoCompra.PENDIENTE) {
             log.warn("Intento de confirmar compra en estado: {}", compra.getEstado());
@@ -103,7 +116,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         log.info("Cancelando compra ID: {} - Motivo: {}", compraId, motivo);
 
         Compra compra = compraRepository.findById(compraId)
-                .orElseThrow(() -> new IllegalArgumentException("Compra no encontrada: " + compraId));
+                .orElseThrow(() -> new IllegalArgumentException(COMPRA_NO_ENCONTRADA + compraId));
 
         if (compra.getEstado() == EstadoCompra.COMPLETADA) {
             log.warn("No se puede cancelar una compra completada");
@@ -244,6 +257,53 @@ public class CheckoutServiceImpl implements CheckoutService {
             case PARCIAL_REEMBOLSADA -> "Compra parcialmente reembolsada.";
             case REEMBOLSADA -> "Compra completamente reembolsada.";
         };
+    }
+
+    /**
+     * Bloquea asientos usando bloqueo pesimista (PESSIMISTIC_WRITE) y valida su disponibilidad.
+     * Este método previene condiciones de carrera (race conditions) en compras concurrentes.
+     *
+     * @param asientoIds Lista de IDs de asientos a bloquear
+     * @throws AsientoNoDisponibleException si algún asiento no está LIBRE
+     */
+    private void bloquearAsientos(List<Long> asientoIds) {
+        log.info("Bloqueando {} asientos: {}", asientoIds.size(), asientoIds);
+
+        // 1. Obtener asientos con bloqueo pesimista (evita lecturas concurrentes)
+        List<Asiento> asientos = asientoRepository.findAllByIdWithLock(asientoIds);
+
+        // 2. Validar que se encontraron todos los asientos
+        if (asientos.size() != asientoIds.size()) {
+            List<Long> encontrados = asientos.stream().map(Asiento::getId).toList();
+            List<Long> noEncontrados = asientoIds.stream()
+                    .filter(id -> !encontrados.contains(id))
+                    .toList();
+            throw new IllegalArgumentException(
+                    "Asientos no encontrados: " + noEncontrados);
+        }
+
+        // 3. Validar que todos los asientos están LIBRES
+        List<Long> asientosNoDisponibles = asientos.stream()
+                .filter(asiento -> asiento.getEstado() != EstadoAsiento.LIBRE)
+                .map(Asiento::getId)
+                .toList();
+
+        if (!asientosNoDisponibles.isEmpty()) {
+            log.warn("Intento de reservar asientos no disponibles: {}", asientosNoDisponibles);
+            throw new AsientoNoDisponibleException(
+                    "Los siguientes asientos no están disponibles: " + asientosNoDisponibles);
+        }
+
+        // 4. Cambiar estado a BLOQUEADO
+        asientos.forEach(asiento -> {
+            asiento.setEstado(EstadoAsiento.BLOQUEADO);
+            log.debug("Asiento {} bloqueado exitosamente", asiento.getId());
+        });
+
+        // 5. Persistir cambios (dentro de la misma transacción)
+        asientoRepository.saveAll(asientos);
+
+        log.info("Todos los asientos bloqueados exitosamente");
     }
 }
 

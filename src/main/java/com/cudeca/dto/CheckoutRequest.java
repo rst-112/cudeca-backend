@@ -14,6 +14,7 @@ public class CheckoutRequest {
     private String emailContacto; // Obligatorio si es invitado
 
     private List<ItemDTO> items; // El carrito
+    private List<Long> asientoIds; // IDs de asientos a reservar (para bloqueo transaccional)
     private Double donacionExtra; // La casilla de "Donación Extra"
 
     @Data
