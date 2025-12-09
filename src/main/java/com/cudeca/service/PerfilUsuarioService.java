@@ -62,5 +62,42 @@ public interface PerfilUsuarioService {
      * @return true si el usuario existe
      */
     boolean existeUsuario(Long usuarioId);
+
+    /**
+     * Obtiene todas las entradas (tickets) de un usuario.
+     *
+     * @param usuarioId ID del usuario
+     * @return Lista de entradas emitidas del usuario
+     * @throws IllegalArgumentException si el usuario no existe
+     */
+    java.util.List<com.cudeca.model.negocio.EntradaEmitida> obtenerEntradasUsuario(Long usuarioId);
+
+    /**
+     * Genera un PDF de una entrada específica.
+     *
+     * @param entradaId ID de la entrada a generar
+     * @param usuarioId ID del usuario propietario (para verificar permisos)
+     * @return Array de bytes con el PDF generado
+     * @throws IllegalArgumentException si la entrada no existe o no pertenece al usuario
+     */
+    byte[] generarPDFEntrada(Long entradaId, Long usuarioId);
+
+    /**
+     * Obtiene el monedero de un usuario.
+     *
+     * @param usuarioId ID del usuario
+     * @return Monedero del usuario
+     * @throws IllegalArgumentException si el usuario no existe o no tiene monedero
+     */
+    com.cudeca.model.negocio.Monedero obtenerMonedero(Long usuarioId);
+
+    /**
+     * Obtiene el historial de movimientos del monedero de un usuario.
+     *
+     * @param usuarioId ID del usuario
+     * @return Lista de movimientos del monedero ordenados por fecha descendente
+     * @throws IllegalArgumentException si el usuario no existe o no tiene monedero
+     */
+    java.util.List<com.cudeca.model.negocio.MovimientoMonedero> obtenerMovimientosMonedero(Long usuarioId);
 }
 

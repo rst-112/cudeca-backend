@@ -469,5 +469,128 @@ class PerfilUsuarioServiceImplTest {
             u.getDireccion().isEmpty()
         ));
     }
-}
 
+    // --- TESTS PARA NUEVOS MÉTODOS ---
+
+    @Test
+    @DisplayName("Debe obtener entradas de usuario sin entradas")
+    void testObtenerEntradasUsuario_SinEntradas() {
+        // Arrange
+        when(usuarioRepository.existsById(1L)).thenReturn(true);
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        // Act
+        var entradas = perfilUsuarioService.obtenerEntradasUsuario(1L);
+
+        // Assert
+        assertThat(entradas).isEmpty();
+        verify(usuarioRepository).existsById(1L);
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al obtener entradas de usuario inexistente")
+    void testObtenerEntradasUsuario_UsuarioNoExiste() {
+        // Arrange
+        when(usuarioRepository.existsById(999L)).thenReturn(false);
+
+        // Act & Assert
+        assertThatThrownBy(() -> perfilUsuarioService.obtenerEntradasUsuario(999L))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Usuario no encontrado");
+    }
+
+    @Test
+    @DisplayName("Debe obtener monedero de un comprador")
+    void testObtenerMonedero_Exitoso() {
+        // Arrange
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+
+        // Act
+        var resultado = perfilUsuarioService.obtenerMonedero(1L);
+
+        // Assert
+        assertThat(resultado).isNotNull();
+        assertThat(resultado.getSaldo()).isEqualByComparingTo(BigDecimal.valueOf(50.00));
+        verify(monederoRepository).findByComprador_Id(1L);
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al obtener monedero de usuario inexistente")
+    void testObtenerMonedero_UsuarioNoExiste() {
+        // Arrange
+        when(usuarioRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> perfilUsuarioService.obtenerMonedero(999L))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Usuario no encontrado");
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción si usuario no tiene monedero")
+    void testObtenerMonedero_SinMonedero() {
+        // Arrange
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> perfilUsuarioService.obtenerMonedero(1L))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("no tiene monedero configurado");
+    }
+
+    @Test
+    @DisplayName("Debe obtener movimientos del monedero ordenados por fecha descendente")
+    void testObtenerMovimientosMonedero_Exitoso() {
+        // Arrange
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+
+        // Act
+        var movimientos = perfilUsuarioService.obtenerMovimientosMonedero(1L);
+
+        // Assert
+        assertThat(movimientos).isNotNull();
+        assertThat(movimientos).hasSize(monedero.getMovimientos().size());
+        verify(monederoRepository).findByComprador_Id(1L);
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al obtener movimientos de usuario sin monedero")
+    void testObtenerMovimientosMonedero_SinMonedero() {
+        // Arrange
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> perfilUsuarioService.obtenerMovimientosMonedero(1L))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("no tiene monedero configurado");
+    }
+
+    @Test
+    @DisplayName("Debe generar PDF de entrada con contenido básico")
+    void testGenerarPDFEntrada_UsuarioSinEntradas() {
+        // Arrange
+        when(usuarioRepository.existsById(1L)).thenReturn(true);
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+
+        // Act & Assert
+        assertThatThrownBy(() -> perfilUsuarioService.generarPDFEntrada(999L, 1L))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Entrada no encontrada o no pertenece al usuario");
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al generar PDF para usuario inexistente")
+    void testGenerarPDFEntrada_UsuarioNoExiste() {
+        // Arrange
+        when(usuarioRepository.existsById(999L)).thenReturn(false);
+
+        // Act & Assert
+        assertThatThrownBy(() -> perfilUsuarioService.generarPDFEntrada(1L, 999L))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Usuario no encontrado");
+    }
+}
