@@ -35,11 +35,8 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     private static final Logger log = LoggerFactory.getLogger(CheckoutServiceImpl.class);
     private static final String COMPRA_NO_ENCONTRADA = "Compra no encontrada: ";
-<<<<<<< Updated upstream
 
-    private static final String COMPRA_NO_ENCONTRADA = "Compra no encontrada: ";
-=======
->>>>>>> Stashed changes
+
 
     private final CompraRepository compraRepository;
     private final UsuarioRepository usuarioRepository;
@@ -172,21 +169,18 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     private void procesarItems(CheckoutRequest request, Compra compra) {
         for (CheckoutRequest.ItemDTO itemDTO : request.getItems()) {
-            ArticuloCompra articulo = crearArticulo(itemDTO, compra);
+            ArticuloCompra articulo = crearArticulo(itemDTO);
             compra.getArticulos().add(articulo);
         }
     }
 
-    private ArticuloCompra crearArticulo(CheckoutRequest.ItemDTO itemDTO, Compra compra) {
+    private ArticuloCompra crearArticulo(CheckoutRequest.ItemDTO itemDTO) {
         TipoItem tipoItem = TipoItem.valueOf(itemDTO.getTipo().toUpperCase());
 
         return switch (tipoItem) {
             case ENTRADA -> crearArticuloEntrada(itemDTO);
             case DONACION -> crearArticuloDonacion(itemDTO);
-            case SORTEO -> {
-                // TODO: Implementar soporte para SORTEO
-                yield crearArticuloEntrada(itemDTO);
-            }
+            case SORTEO -> crearArticuloEntrada(itemDTO); // TODO: Implementar soporte para SORTEO
         };
     }
 
@@ -195,36 +189,6 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "TipoEntrada no encontrado: " + itemDTO.getReferenciaId()));
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        ArticuloEntrada articulo = ArticuloEntrada.builder()
-                .tipoEntrada(tipoEntrada)
-                .entradasEmitidas(new ArrayList<>())
-                .build();
-        
-        articulo.setCompra(compra);
-        // articulo.setTipo(TipoItem.ENTRADA);  <-- BORRADO (JPA lo hace automático)
-        
-        articulo.setCantidad(itemDTO.getCantidad());
-        articulo.setSolicitaCertificado(false);
-        
-        BigDecimal precio = itemDTO.getPrecio() != null ?
-                BigDecimal.valueOf(itemDTO.getPrecio()) : tipoEntrada.getCosteBase();
-        articulo.setPrecioUnitario(precio);
-        
-        return articulo;
-    }
-
-    private ArticuloDonacion crearArticuloDonacion(CheckoutRequest.ItemDTO itemDTO, Compra compra) {
-        return ArticuloDonacion.builder()
-                //.compra(compra)
-                .cantidad(itemDTO.getCantidad())
-                .precioUnitario(BigDecimal.valueOf(itemDTO.getPrecio()))
-                //.tipo(TipoItem.DONACION)
-                .solicitaCertificado(false)
-                .destino("General") // Valor por defecto
-                .build();
-=======
         ArticuloEntrada articulo = new ArticuloEntrada();
         articulo.setTipoEntrada(tipoEntrada);
         articulo.setCantidad(itemDTO.getCantidad());
@@ -235,18 +199,6 @@ public class CheckoutServiceImpl implements CheckoutService {
         return articulo;
     }
 
-=======
-        ArticuloEntrada articulo = new ArticuloEntrada();
-        articulo.setTipoEntrada(tipoEntrada);
-        articulo.setCantidad(itemDTO.getCantidad());
-        articulo.setPrecioUnitario(itemDTO.getPrecio() != null ?
-                BigDecimal.valueOf(itemDTO.getPrecio()) : tipoEntrada.getPrecioTotal());
-        articulo.setSolicitaCertificado(false);
-        articulo.setEntradasEmitidas(new ArrayList<>());
-        return articulo;
-    }
-
->>>>>>> Stashed changes
     private ArticuloDonacion crearArticuloDonacion(CheckoutRequest.ItemDTO itemDTO) {
         ArticuloDonacion articulo = new ArticuloDonacion();
         articulo.setCantidad(itemDTO.getCantidad());
@@ -254,10 +206,6 @@ public class CheckoutServiceImpl implements CheckoutService {
         articulo.setSolicitaCertificado(false);
         articulo.setDestino("General"); // Valor por defecto
         return articulo;
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     }
 
     private BigDecimal calcularTotal(Compra compra, Double donacionExtra) {
