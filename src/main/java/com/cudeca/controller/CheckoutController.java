@@ -37,14 +37,20 @@ public class CheckoutController {
     @PostMapping
     public ResponseEntity<CheckoutResponse> procesarCheckout(@RequestBody CheckoutRequest request) {
         try {
-            log.info("POST /api/checkout - Procesando checkout para usuario: {}", request.getUsuarioId());
+            if (log.isInfoEnabled()) {
+                log.info("POST /api/checkout - Procesando checkout para usuario: {}", request.getUsuarioId());
+            }
             CheckoutResponse response = checkoutService.procesarCheckout(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
-            log.error("Error de validación en checkout: {}", e.getMessage());
+            if (log.isErrorEnabled()) {
+                log.error("Error de validación en checkout: {}", e.getMessage());
+            }
             return ResponseEntity.badRequest().body(crearRespuestaError(e.getMessage()));
         } catch (IllegalStateException e) {
-            log.error("Error de estado en checkout: {}", e.getMessage());
+            if (log.isErrorEnabled()) {
+                log.error("Error de estado en checkout: {}", e.getMessage());
+            }
             return ResponseEntity.status(HttpStatus.CONFLICT).body(crearRespuestaError(e.getMessage()));
         } catch (Exception e) {
             log.error("Error inesperado en checkout", e);

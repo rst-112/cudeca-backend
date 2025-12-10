@@ -55,7 +55,9 @@ public class DatosFiscalesServiceImpl implements DatosFiscalesService {
 
         // Guardar
         DatosFiscales guardado = datosFiscalesRepository.save(datosFiscales);
-        log.info("Datos fiscales creados con ID: {}", guardado.getId());
+        if (log.isInfoEnabled()) {
+            log.info("Datos fiscales creados con ID: {}", guardado.getId());
+        }
 
         return guardado;
     }

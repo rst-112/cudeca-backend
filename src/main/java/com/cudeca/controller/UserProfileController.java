@@ -1,5 +1,7 @@
 package com.cudeca.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,6 +11,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/perfil-demo")
 public class UserProfileController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(UserProfileController.class);
 
     @GetMapping("/{usuarioId}/entradas")
     public ResponseEntity<?> getHistorial(@PathVariable Long usuarioId) {
@@ -53,7 +57,9 @@ public class UserProfileController {
     @PutMapping("/{usuarioId}/fiscal")
     public ResponseEntity<?> updateDatosFiscales(@PathVariable Long usuarioId, @RequestBody Map<String, String> datos) {
         // TODO: Conectar con base de datos real (Tabla DATOS_FISCALES)
-        System.out.println("Guardando datos fiscales (Simulado) para usuario " + usuarioId + ": " + datos);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Guardando datos fiscales (Simulado) para usuario {}: {}", usuarioId, datos);
+        }
         return ResponseEntity.ok("Datos fiscales actualizados correctamente (Simulado).");
     }
 

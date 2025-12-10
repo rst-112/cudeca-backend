@@ -89,17 +89,23 @@ public class PerfilUsuarioController {
             @PathVariable Long usuarioId,
             @RequestBody Map<String, String> payload) {
         try {
-            log.info("PUT /api/perfil/{} - Actualizando perfil", usuarioId);
+            if (log.isInfoEnabled()) {
+                log.info("PUT /api/perfil/{} - Actualizando perfil", usuarioId);
+            }
             String nombre = payload.get("nombre");
             String direccion = payload.get("direccion");
 
             UserProfileDTO perfilActualizado = perfilUsuarioService.actualizarPerfil(usuarioId, nombre, direccion);
             return ResponseEntity.ok(perfilActualizado);
         } catch (IllegalArgumentException e) {
-            log.error("Error actualizando perfil: {}", e.getMessage());
+            if (log.isErrorEnabled()) {
+                log.error("Error actualizando perfil: {}", e.getMessage());
+            }
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            log.error("Error actualizando perfil", e);
+            if (log.isErrorEnabled()) {
+                log.error("Error actualizando perfil", e);
+            }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error interno actualizando perfil"));
         }
@@ -140,10 +146,12 @@ public class PerfilUsuarioController {
             @PathVariable Long usuarioId,
             @PathVariable Long entradaId) {
         try {
-            log.info("GET /api/perfil/{}/entradas/{}/pdf - Generando PDF de entrada", usuarioId, entradaId);
+            if (log.isInfoEnabled()) {
+                log.info("GET /api/perfil/{}/entradas/{}/pdf - Generando PDF de entrada", usuarioId, entradaId);
+            }
             byte[] pdfBytes = perfilUsuarioService.generarPDFEntrada(entradaId, usuarioId);
 
-            HttpHeaders headers = new HttpHeaders();
+            var headers = new org.springframework.http.HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
             headers.setContentDispositionFormData("attachment", "entrada_" + entradaId + ".pdf");
 
@@ -151,7 +159,9 @@ public class PerfilUsuarioController {
                     .headers(headers)
                     .body(pdfBytes);
         } catch (IllegalArgumentException e) {
-            log.error("Error generando PDF: {}", e.getMessage());
+            if (log.isErrorEnabled()) {
+                log.error("Error generando PDF: {}", e.getMessage());
+            }
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
@@ -170,11 +180,15 @@ public class PerfilUsuarioController {
     @GetMapping("/{usuarioId}/monedero")
     public ResponseEntity<?> obtenerMonedero(@PathVariable Long usuarioId) {
         try {
-            log.info("GET /api/perfil/{}/monedero - Obteniendo monedero", usuarioId);
+            if (log.isInfoEnabled()) {
+                log.info("GET /api/perfil/{}/monedero - Obteniendo monedero", usuarioId);
+            }
             Monedero monedero = perfilUsuarioService.obtenerMonedero(usuarioId);
             return ResponseEntity.ok(monedero);
         } catch (IllegalArgumentException e) {
-            log.error("Error obteniendo monedero: {}", e.getMessage());
+            if (log.isErrorEnabled()) {
+                log.error("Error obteniendo monedero: {}", e.getMessage());
+            }
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
@@ -193,11 +207,15 @@ public class PerfilUsuarioController {
     @GetMapping("/{usuarioId}/monedero/movimientos")
     public ResponseEntity<?> obtenerMovimientosMonedero(@PathVariable Long usuarioId) {
         try {
-            log.info("GET /api/perfil/{}/monedero/movimientos - Obteniendo movimientos del monedero", usuarioId);
+            if (log.isInfoEnabled()) {
+                log.info("GET /api/perfil/{}/monedero/movimientos - Obteniendo movimientos del monedero", usuarioId);
+            }
             List<MovimientoMonedero> movimientos = perfilUsuarioService.obtenerMovimientosMonedero(usuarioId);
             return ResponseEntity.ok(movimientos);
         } catch (IllegalArgumentException e) {
-            log.error("Error obteniendo movimientos del monedero: {}", e.getMessage());
+            if (log.isErrorEnabled()) {
+                log.error("Error obteniendo movimientos del monedero: {}", e.getMessage());
+            }
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
         } catch (Exception e) {

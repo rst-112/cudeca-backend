@@ -64,7 +64,9 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     @Override
     public CheckoutResponse procesarCheckout(CheckoutRequest request) {
-        log.info("Procesando checkout para usuario ID: {}", request.getUsuarioId());
+        if (log.isInfoEnabled()) {
+            log.info("Procesando checkout para usuario ID: {}", request.getUsuarioId());
+        }
 
         // 1. Validar datos básicos
         validarCheckoutRequest(request);
@@ -86,7 +88,9 @@ public class CheckoutServiceImpl implements CheckoutService {
         // 6. Guardar compra
         compra = compraRepository.save(compra);
 
-        log.info("Compra creada con ID: {} y total: {}", compra.getId(), total);
+        if (log.isInfoEnabled()) {
+            log.info("Compra creada con ID: {} y total: {}", compra.getId(), total);
+        }
 
         // 7. Preparar respuesta
         return construirRespuesta(compra, total);
@@ -100,14 +104,18 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .orElseThrow(() -> new IllegalArgumentException(COMPRA_NO_ENCONTRADA + compraId));
 
         if (compra.getEstado() != EstadoCompra.PENDIENTE) {
-            log.warn("Intento de confirmar compra en estado: {}", compra.getEstado());
+            if (log.isWarnEnabled()) {
+                log.warn("Intento de confirmar compra en estado: {}", compra.getEstado());
+            }
             return false;
         }
 
         compra.setEstado(EstadoCompra.COMPLETADA);
         compraRepository.save(compra);
 
-        log.info("Pago confirmado para compra ID: {}", compraId);
+        if (log.isInfoEnabled()) {
+            log.info("Pago confirmado para compra ID: {}", compraId);
+        }
         return true;
     }
 
@@ -265,7 +273,9 @@ public class CheckoutServiceImpl implements CheckoutService {
      * @throws AsientoNoDisponibleException si algún asiento no está LIBRE
      */
     private void bloquearAsientos(List<Long> asientoIds) {
-        log.info("Bloqueando {} asientos: {}", asientoIds.size(), asientoIds);
+        if (log.isInfoEnabled()) {
+            log.info("Bloqueando {} asientos: {}", asientoIds.size(), asientoIds);
+        }
 
         // 1. Obtener asientos con bloqueo pesimista (evita lecturas concurrentes)
         List<Asiento> asientos = asientoRepository.findAllByIdWithLock(asientoIds);
@@ -287,7 +297,9 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .toList();
 
         if (!asientosNoDisponibles.isEmpty()) {
-            log.warn("Intento de reservar asientos no disponibles: {}", asientosNoDisponibles);
+            if (log.isWarnEnabled()) {
+                log.warn("Intento de reservar asientos no disponibles: {}", asientosNoDisponibles);
+            }
             throw new AsientoNoDisponibleException(
                     "Los siguientes asientos no están disponibles: " + asientosNoDisponibles);
         }
@@ -295,12 +307,16 @@ public class CheckoutServiceImpl implements CheckoutService {
         // 4. Cambiar estado a BLOQUEADO
         asientos.forEach(asiento -> {
             asiento.setEstado(EstadoAsiento.BLOQUEADO);
-            log.debug("Asiento {} bloqueado exitosamente", asiento.getId());
+            if (log.isDebugEnabled()) {
+                log.debug("Asiento {} bloqueado exitosamente", asiento.getId());
+            }
         });
 
         // 5. Persistir cambios (dentro de la misma transacción)
         asientoRepository.saveAll(asientos);
 
-        log.info("Todos los asientos bloqueados exitosamente");
+        if (log.isInfoEnabled()) {
+            log.info("Todos los asientos bloqueados exitosamente");
+        }
     }
 }

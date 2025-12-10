@@ -148,7 +148,9 @@ public class PerfilUsuarioServiceImpl implements PerfilUsuarioService {
                 return monedero.get().getSaldo();
             }
         } catch (Exception e) {
-            log.warn("Error al obtener saldo del monedero para usuario ID: {}", usuario.getId(), e);
+            if (log.isWarnEnabled()) {
+                log.warn("Error al obtener saldo del monedero para usuario ID: {}", usuario.getId(), e);
+            }
         }
 
         return BigDecimal.ZERO;
@@ -262,7 +264,8 @@ public class PerfilUsuarioServiceImpl implements PerfilUsuarioService {
     public com.cudeca.model.negocio.Monedero obtenerMonedero(Long usuarioId) {
         log.debug("Obteniendo monedero para usuario ID: {}", usuarioId);
 
-        Usuario usuario = usuarioRepository.findById(usuarioId)
+        // Validar que el usuario existe
+        usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException(USUARIO_NO_ENCONTRADO + usuarioId));
 
         return monederoRepository.findByUsuario_Id(usuarioId)
@@ -284,8 +287,10 @@ public class PerfilUsuarioServiceImpl implements PerfilUsuarioService {
 
         movimientos.sort((m1, m2) -> m2.getFecha().compareTo(m1.getFecha()));
 
-        log.debug("Se encontraron {} movimientos para el monedero del usuario ID: {}",
-                movimientos.size(), usuarioId);
+        if (log.isDebugEnabled()) {
+            log.debug("Se encontraron {} movimientos para el monedero del usuario ID: {}",
+                    movimientos.size(), usuarioId);
+        }
 
         return movimientos;
     }

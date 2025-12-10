@@ -7,6 +7,7 @@ import java.io.Serial;
  * Excepción lanzada cuando se intenta operar sobre un asiento que no está disponible.
  * Se utiliza principalmente en operaciones de compra y bloqueo de asientos.
  */
+@Getter
 public class AsientoNoDisponibleException extends RuntimeException {
 
     @Serial

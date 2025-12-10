@@ -80,11 +80,15 @@ public class DatosFiscalesController {
             @RequestBody DatosFiscales datosFiscales,
             @PathVariable Long usuarioId) {
         try {
-            log.info("POST /api/datos-fiscales/usuario/{} - Creando datos fiscales", usuarioId);
+            if (log.isInfoEnabled()) {
+                log.info("POST /api/datos-fiscales/usuario/{} - Creando datos fiscales", usuarioId);
+            }
             DatosFiscales creado = datosFiscalesService.crearDatosFiscales(datosFiscales, usuarioId);
             return ResponseEntity.status(HttpStatus.CREATED).body(creado);
         } catch (IllegalArgumentException e) {
-            log.error("Error de validación creando datos fiscales: {}", e.getMessage());
+            if (log.isErrorEnabled()) {
+                log.error("Error de validación creando datos fiscales: {}", e.getMessage());
+            }
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             log.error("Error creando datos fiscales", e);
@@ -107,11 +111,15 @@ public class DatosFiscalesController {
             @RequestBody DatosFiscales datosFiscales,
             @RequestParam Long usuarioId) {
         try {
-            log.info("PUT /api/datos-fiscales/{} - Actualizando datos fiscales. Usuario: {}", id, usuarioId);
+            if (log.isInfoEnabled()) {
+                log.info("PUT /api/datos-fiscales/{} - Actualizando datos fiscales. Usuario: {}", id, usuarioId);
+            }
             DatosFiscales actualizado = datosFiscalesService.actualizarDatosFiscales(id, datosFiscales, usuarioId);
             return ResponseEntity.ok(actualizado);
         } catch (IllegalArgumentException e) {
-            log.error("Error actualizando datos fiscales: {}", e.getMessage());
+            if (log.isErrorEnabled()) {
+                log.error("Error actualizando datos fiscales: {}", e.getMessage());
+            }
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             log.error("Error actualizando datos fiscales: {}", id, e);
