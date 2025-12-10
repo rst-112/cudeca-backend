@@ -2,7 +2,6 @@ package com.cudeca.repository;
 
 import com.cudeca.model.enums.EstadoAsiento;
 import com.cudeca.model.evento.Asiento;
-import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -37,11 +36,4 @@ public interface AsientoRepository extends JpaRepository<Asiento, Long> {
      * Cuenta asientos libres en una zona.
      */
     long countByZona_IdAndEstado(Long zonaId, EstadoAsiento estado);
-
-    /**
-     * Encuentra y bloquea asientos por sus IDs para evitar condiciones de carrera.
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select a from Asiento a where a.id in :ids")
-    List<Asiento> findAllByIdWithLock(@Param("ids") List<Long> ids);
 }

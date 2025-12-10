@@ -2,8 +2,9 @@ package com.cudeca.model.negocio;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "RECIBOS")
@@ -17,38 +18,25 @@ public class Recibo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- RELACIÓN CON COMPRA (1:1) ---
-    // SQL: compra_id BIGINT NOT NULL UNIQUE REFERENCES COMPRAS
-    // Es "optional = false" porque un recibo no puede existir sin una compra asociada.
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "compra_id", unique = true, nullable = false)
     @ToString.Exclude
     private Compra compra;
 
-    // --- DATOS DEL RECIBO ---
-
-    // SQL: fecha_emision TIMESTAMPTZ NOT NULL DEFAULT now()
     @Column(name = "fecha_emision", nullable = false, updatable = false)
-    private Instant fechaEmision;
+    private OffsetDateTime fechaEmision;
 
-    // SQL: total NUMERIC(12,2) NOT NULL CHECK (total >= 0)
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
 
-    // SQL: resumen VARCHAR
-    // String normal - VARCHAR en la BD
     @Column(columnDefinition = "TEXT")
     private String resumen;
-
-    // --- CICLO DE VIDA ---
 
     @PrePersist
     public void prePersist() {
         if (this.fechaEmision == null) {
-            this.fechaEmision = Instant.now();
+            this.fechaEmision = OffsetDateTime.now();
         }
-
-        // Validación de Integridad (CHECK >= 0)
         if (this.total != null && this.total.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("El total del recibo no puede ser negativo.");
         }
