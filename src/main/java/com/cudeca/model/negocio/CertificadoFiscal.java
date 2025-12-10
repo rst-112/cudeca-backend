@@ -49,8 +49,7 @@ public class CertificadoFiscal {
     @Column(name = "hash_documento", length = 120)
     private String hashDocumento;
 
-    @Lob
-    @Column(name = "datos_snapshot_json")
+    @Column(name = "datos_snapshot_json", columnDefinition = "JSONB")
     private String datosSnapshotJson;
 
     @PrePersist

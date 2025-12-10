@@ -35,9 +35,8 @@ public class Recibo {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal total;
 
-    // SQL: resumen TEXT
-    // Usamos @Lob para textos largos compatibles tanto con PostgreSQL como con H2
-    @Lob
+    // SQL: resumen VARCHAR
+    // String normal - VARCHAR en la BD
     @Column(name = "resumen")
     private String resumen;
 
