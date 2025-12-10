@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Excluir warnings de "expose internal representation" en entidades JPA (generadas por Lombok) -->
+    <Match>
+        <Package name="~com\.cudeca\.model\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <Match>
+        <Class name="~com\.cudeca\.dto\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Excluir warnings de "useless control flow" en métodos de negocio -->
+    <Match>
+        <Bug pattern="UCF_USELESS_CONTROL_FLOW"/>
+    </Match>
+
+    <!-- Excluir warnings en clases generadas por Lombok -->
+    <Match>
+        <Class name="~.*\$.*Builder"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Excluir EI_EXPOSE_REP2 en SecurityConfig - Spring DI es seguro -->
+    <Match>
+        <Class name="com.cudeca.config.SecurityConfig"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- Excluir warnings de serialización en entidades JPA con UserDetails -->
+    <!-- Las entidades JPA no están destinadas a ser serializadas a través de la red -->
+    <Match>
+        <Class name="com.cudeca.model.usuario.Usuario"/>
+        <Bug pattern="SE_BAD_FIELD,SE_NO_SERIALVERSIONID"/>
+    </Match>
+
+    <!-- Excluir warnings en paquete config por inyección de dependencias -->
+    <Match>
+        <Package name="~com\.cudeca\.config\..*"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+</FindBugsFilter>

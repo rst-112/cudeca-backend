@@ -8,9 +8,12 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "NOTIFICACIONES") //
+@Table(name = "NOTIFICACIONES", indexes = {
+        @Index(name = "ix_notif_estado", columnList = "estado")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,28 +24,19 @@ public class Notificacion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- CONEXIONES (Origen del evento) ---
-    // Relación con Usuario
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = true)
     @ToString.Exclude
-    private Usuario usuario; // <--- ¡TIENE QUE LLAMARSE 'usuario'!
-    // Relación con Compra (Opcional: ej. Email de Entradas)
-    // SQL: compra_id BIGINT REFERENCES COMPRAS (nullable)
+    private Usuario usuario;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "compra_id", nullable = true)
     @ToString.Exclude
     private Compra compra;
 
-    // --- DATOS DEL ENVÍO ---
-
-    // SQL: tipo VARCHAR(120) NOT NULL
-    // Ej: "CONFIRMACION_COMPRA", "RECUPERAR_PASS", "ALTA_SOCIO"
     @Column(nullable = false, length = 120)
     private String tipo;
 
-    // SQL: destino VARCHAR(255) NOT NULL
-    // El email al que se envía (ej: cliente@gmail.com)
     @Column(nullable = false, length = 255)
     private String destino;
 
@@ -57,15 +51,12 @@ public class Notificacion {
     @Builder.Default
     private EstadoNotificacion estado = EstadoNotificacion.PENDIENTE;
 
-    // SQL: intentos INT NOT NULL DEFAULT 0
     @Column(nullable = false)
     @Builder.Default
     private Integer intentos = 0;
 
-    // SQL: fecha_envio TIMESTAMPTZ
-    // Puede ser nulo si aún no se ha enviado
     @Column(name = "fecha_envio")
-    private Instant fechaEnvio;
+    private OffsetDateTime fechaEnvio;
 
     // --- MÉTODOS DEL CICLO DE VIDA ---
 
@@ -79,12 +70,12 @@ public class Notificacion {
 
     public void marcarComoEnviada() {
         this.estado = EstadoNotificacion.ENVIADA;
-        this.fechaEnvio = Instant.now();
+        this.fechaEnvio = OffsetDateTime.from(Instant.now());
     }
 
     public void registrarFallo() {
         this.estado = EstadoNotificacion.ERROR;
         this.intentos++;
-        this.fechaEnvio = Instant.now(); // Registramos cuándo falló
+        this.fechaEnvio = OffsetDateTime.from(Instant.now());
     }
 }

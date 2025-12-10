@@ -1,26 +1,30 @@
 package com.cudeca.model.usuario;
 
+import com.cudeca.model.negocio.Monedero;
+import com.cudeca.model.negocio.SolicitudRetiro;
+import com.cudeca.model.negocio.Suscripcion;
+import com.cudeca.model.negocio.ValidacionEntrada;
 import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.DiscriminatorFormula;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
+import java.io.Serial;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "USUARIOS")
-// --- CAMBIO IMPORTANTE AQUÍ ---
-// Usamos SINGLE_TABLE para que NO busque la tabla 'comprador'
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-// Define el nombre de la columna que distingue tipos (revisa si en tu SQL es 'tipo_usuario' o 'dtype')
-@DiscriminatorFormula("'COMPRADOR'")// ------------------------------
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public abstract class Usuario {
+@Builder
+public class Usuario implements UserDetails {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,43 +41,79 @@ public abstract class Usuario {
 
     private String direccion;
 
-    // Uso de Instant (UTC) como vimos en tu tabla de fechas
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+    private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    private OffsetDateTime updatedAt;
 
-    // Relación con Roles (Tabla USUARIOS_ROLES del PDF pág. 48)
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "USUARIOS_ROLES",
             joinColumns = @JoinColumn(name = "usuario_id"),
             inverseJoinColumns = @JoinColumn(name = "rol_id")
     )
-    @Builder.Default // Asegura que el Set no sea null al usar el Builder
-    @ToString.Exclude // Evita bucles infinitos en los logs
+    @Builder.Default
+    @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private Set<Rol> roles = new HashSet<>();
 
-    // --- MÉTODOS DEL CICLO DE VIDA (PrePersist/PreUpdate) ---
-    // Las anotaciones @CreationTimestamp y @UpdateTimestamp manejan automáticamente las fechas
+    // --- CAMPOS DE "COMPRADOR" ---
 
-    // Añadir si quieres ver el historial de tokens de un usuario:
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @ToString.Exclude
+    private Monedero monedero;
+
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @ToString.Exclude
+    private Set<SolicitudRetiro> solicitudesRetiro = new HashSet<>();
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private List<Suscripcion> suscripciones = new ArrayList<>();
+
+    // --- CAMPOS DE "PERSONAL" ---
+    @OneToMany(mappedBy = "personalValidador", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private List<ValidacionEntrada> validacionesRealizadas = new ArrayList<>();
+
+    // --- CAMPOS DE "ADMIN" ---
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private List<Exportacion> exportaciones = new ArrayList<>();
+
+    // --- AUDITORÍA Y OTROS ---
+    @OneToMany(mappedBy = "usuario")
+    @Builder.Default
+    private Set<Auditoria> auditorias = new HashSet<>();
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
     @Builder.Default
     @ToString.Exclude
     private Set<VerificacionCuenta> verificaciones = new HashSet<>();
 
-    @OneToMany(mappedBy = "usuario")
-    @Builder.Default // <--- AÑADIR
-    private Set<Auditoria> auditorias = new HashSet<>(); //Por que es un Set?
-    // --- MÉTODOS DE NEGOCIO (Del Diagrama UML) ---
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL)
+    @Builder.Default
+    @ToString.Exclude
+    private List<DatosFiscales> datosFiscales = new ArrayList<>();
 
-    /**
-     * Diagrama: actualizarPerfil(): void
-     * Implementación: Actualiza los datos permitidos y refresca la fecha.
-     */
+    // --- CICLO DE VIDA ---
+    @PrePersist
+    public void prePersist() {
+        if (this.createdAt == null) this.createdAt = OffsetDateTime.now();
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = OffsetDateTime.now();
+    }
+
+    // --- MÉTODOS ---
     public void actualizarPerfil(String nuevoNombre, String nuevaDireccion) {
         if (nuevoNombre != null && !nuevoNombre.isBlank()) {
             this.nombre = nuevoNombre;
@@ -81,16 +121,48 @@ public abstract class Usuario {
         if (nuevaDireccion != null) {
             this.direccion = nuevaDireccion;
         }
-        // El @PreUpdate actualizará el 'updatedAt' automáticamente al guardar
     }
 
-    /*
-     * NOTA ARQUITECTÓNICA SOBRE: registrarse() e iniciarSesion()
-     * * En Spring Boot, estos métodos NO se implementan aquí dentro.
-     * La entidad Usuario solo representa DATOS.
-     * * - registrarse() -> Se implementa en AuthService.register(DTO)
-     * - iniciarSesion() -> Se implementa en AuthService.login(DTO)
-     * * Poner lógica de autenticación aquí rompería el principio de
-     * responsabilidad única y haría imposible inyectar Repositorios.
-     */
+    public boolean esAdmin() {
+        return roles.stream().anyMatch(r -> "ADMINISTRADOR".equalsIgnoreCase(r.getNombre()));
+    }
+
+    // --- IMPLEMENTACIÓN DE USERDETAILS ---
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return roles.stream()
+                .map(rol -> new SimpleGrantedAuthority(rol.getNombre()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public String getPassword() {
+        return this.passwordHash;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 }

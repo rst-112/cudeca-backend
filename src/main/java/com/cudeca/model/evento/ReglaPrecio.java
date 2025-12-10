@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 /**
  * Entidad que representa una regla de ajuste de precios (descuento/recargo) para un evento.
@@ -62,12 +63,11 @@ public class ReglaPrecio {
         }
 
         if (tipoAjuste == TipoAjusteRegla.PORCENTAJE) {
-            BigDecimal ajuste = precioBase.multiply(valor).divide(new BigDecimal(100));
+            BigDecimal ajuste = precioBase.multiply(valor).divide(new BigDecimal(100), RoundingMode.HALF_UP);
             return precioBase.subtract(ajuste);
         } else if (tipoAjuste == TipoAjusteRegla.FIJO) {
             return precioBase.subtract(valor);
         }
         return precioBase;
     }
-
 }

@@ -1,8 +1,6 @@
 package com.cudeca.model.negocio;
 
 import com.cudeca.model.usuario.DatosFiscales;
-// import com.cudeca.model.negocio.ArticuloDonacion; // <-- Descomentar si la tienes creada
-
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -10,12 +8,15 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
+import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Entity
-@Table(name = "CERTIFICADOS_FISCALES")
+@Table(name = "CERTIFICADOS_FISCALES", indexes = {
+        @Index(name = "ix_certs_datos", columnList = "datos_fiscales_id")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -41,7 +42,7 @@ public class CertificadoFiscal {
     // --- DATOS LEGALES ---
 
     @Column(name = "fecha_emision", nullable = false, updatable = false)
-    private Instant fechaEmision;
+    private OffsetDateTime fechaEmision;
 
     @Column(name = "importe_donado", nullable = false, precision = 12, scale = 2)
     private BigDecimal importeDonado;
@@ -58,28 +59,20 @@ public class CertificadoFiscal {
 
     @PrePersist
     public void prePersist() {
-        if (this.fechaEmision == null) this.fechaEmision = Instant.now();
+        if (this.fechaEmision == null) this.fechaEmision = OffsetDateTime.from(Instant.now());
     }
 
-    // --- RELACIÓN CON ARTÍCULOS DE DONACIÓN (Derivada) ---
-
     /**
-     * Diagrama: Relación "justifica" con ArticuloDonacion.
-     * Como no hay FK directa en SQL, la obtenemos a través de la Compra.
-     * Devuelve solo los artículos que son Donaciones.
-     */
-    /* DESCOMENTAR ESTE BLOQUE CUANDO TENGAS 'ArticuloDonacion' FUNCIONANDO
+     * Obtiene los artículos de donación asociados a esta certificación.
+     * Filtra de la compra solo los artículos que son donaciones.
      */
     public List<ArticuloDonacion> getArticulosJustificantes() {
-
         if (this.compra == null || this.compra.getArticulos() == null) {
             return Collections.emptyList();
         }
-        // Filtramos de la compra solo aquello que sea Donación
         return this.compra.getArticulos().stream()
                 .filter(art -> art instanceof ArticuloDonacion)
                 .map(art -> (ArticuloDonacion) art)
                 .collect(Collectors.toList());
     }
-
 }

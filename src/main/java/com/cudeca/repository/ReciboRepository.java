@@ -10,8 +10,8 @@ import java.util.Optional;
  * Repositorio para la gestión de Recibos simples de compra.
  * Permite recuperar el comprobante asociado a una transacción.
  */
-@Repository // (1)
-public interface ReciboRepository extends JpaRepository<Recibo, Long> { // (2)
+@Repository
+public interface ReciboRepository extends JpaRepository<Recibo, Long> {
 
     /**
      * Busca el recibo asociado a una compra específica.
@@ -20,7 +20,7 @@ public interface ReciboRepository extends JpaRepository<Recibo, Long> { // (2)
      * @param compraId El ID de la compra padre.
      * @return Optional con el recibo (puede no existir si la compra está PENDIENTE o CANCELADA).
      */
-    Optional<Recibo> findByCompra_Id(Long compraId); // (3)
+    Optional<Recibo> findByCompra_Id(Long compraId);
 
     /**
      * Verifica si ya existe un recibo para una compra.
@@ -28,5 +28,5 @@ public interface ReciboRepository extends JpaRepository<Recibo, Long> { // (2)
      * para evitar una excepción de base de datos (Unique Constraint Violation),
      * ya que la relación es 1 a 1 estricta.
      */
-    boolean existsByCompra_Id(Long compraId); // (4)
+    boolean existsByCompra_Id(Long compraId);
 }

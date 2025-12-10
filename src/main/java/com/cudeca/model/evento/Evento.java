@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,10 +39,10 @@ public class Evento {
 
     @Column(name = "fecha_inicio", nullable = false)
     @NotNull(message = "La fecha de inicio es obligatoria")
-    private Instant fechaInicio;
+    private OffsetDateTime fechaInicio;
 
     @Column(name = "fecha_fin")
-    private Instant fechaFin;
+    private OffsetDateTime fechaFin;
 
     @Column(length = 255)
     @Size(max = 255)
@@ -105,5 +105,4 @@ public class Evento {
     public void finalizar() {
         this.estado = EstadoEvento.FINALIZADO;
     }
-
 }

@@ -8,11 +8,8 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.OffsetDateTime;
 
-/**
- * Entidad que registra cada movimiento (abono, cargo, retiro) en el monedero de un usuario.
- */
 @Entity
 @Table(name = "MOVIMIENTOS_MONEDERO", indexes = {
         @Index(name = "ix_movmon_monedero_fecha", columnList = "monedero_id,fecha")
@@ -27,7 +24,6 @@ public class MovimientoMonedero {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Relación N:1 con Monedero (FK: monedero_id)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "monedero_id", nullable = false)
     @NotNull(message = "El monedero es obligatorio")
@@ -45,9 +41,16 @@ public class MovimientoMonedero {
     private BigDecimal importe;
 
     @Column(nullable = false, updatable = false)
-    private Instant fecha;
+    private OffsetDateTime fecha;
 
     @Column(length = 255)
     @Size(max = 255)
-    private String referencia; // Ej: "Devolución Compra #123"
+    private String referencia;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.fecha == null) {
+            this.fecha = OffsetDateTime.now();
+        }
+    }
 }

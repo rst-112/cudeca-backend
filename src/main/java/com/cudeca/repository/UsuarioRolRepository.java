@@ -22,4 +22,3 @@ public interface UsuarioRolRepository extends JpaRepository<UsuarioRol, Long> {
      */
     long countByRol_Id(Long rolId);
 }
-

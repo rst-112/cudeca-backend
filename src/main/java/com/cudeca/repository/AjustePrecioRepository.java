@@ -10,8 +10,8 @@ import java.util.List;
  * Repositorio para gestionar los descuentos, recargos y modificaciones de precio.
  * Permite auditar por qué cambió el precio final de una compra.
  */
-@Repository // (1)
-public interface AjustePrecioRepository extends JpaRepository<AjustePrecio, Long> { // (2)
+@Repository
+public interface AjustePrecioRepository extends JpaRepository<AjustePrecio, Long> {
 
     /**
      * Recupera todos los ajustes aplicados a una compra completa.
@@ -21,7 +21,7 @@ public interface AjustePrecioRepository extends JpaRepository<AjustePrecio, Long
      * @param compraId ID de la compra.
      * @return Lista de ajustes (globales y por ítem).
      */
-    List<AjustePrecio> findByCompra_Id(Long compraId); // (3)
+    List<AjustePrecio> findByCompra_Id(Long compraId);
 
     /**
      * Recupera los ajustes específicos de un artículo concreto.
@@ -31,13 +31,12 @@ public interface AjustePrecioRepository extends JpaRepository<AjustePrecio, Long
      * @param articuloId ID del artículo (item_id).
      * @return Lista de ajustes de ese ítem.
      */
-    // Nota: Usamos 'ArticuloCompra' porque así llamamos al campo en la entidad Java.
-    List<AjustePrecio> findByArticuloCompra_Id(Long articuloId); // (4)
+    List<AjustePrecio> findByArticuloCompra_Id(Long articuloId);
 
     /**
      * REPORTING: Busca ajustes por tipo.
      * USO: El departamento de marketing quiere saber cuántas veces se ha usado
      * el descuento "PROMO_VERANO_2025".
      */
-    List<AjustePrecio> findByTipo(String tipo); // (5)
+    List<AjustePrecio> findByTipo(String tipo);
 }
