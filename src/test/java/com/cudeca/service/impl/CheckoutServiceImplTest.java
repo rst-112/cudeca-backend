@@ -21,7 +21,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -50,8 +49,6 @@ class CheckoutServiceImplTest {
     @Mock
     private TipoEntradaRepository tipoEntradaRepository;
 
-    @Mock
-    private com.cudeca.repository.AsientoRepository asientoRepository;
 
     @InjectMocks
     private CheckoutServiceImpl checkoutService;
@@ -471,6 +468,60 @@ class CheckoutServiceImplTest {
 
         Compra compraPersistida = compraCaptor.getValue();
         assertThat(compraPersistida.getArticulos()).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("Debe manejar checkout sin donación extra")
+    void testProcesarCheckout_SinDonacionExtra() {
+        // Arrange
+        checkoutRequest.setDonacionExtra(null);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getTotal()).isEqualByComparingTo(BigDecimal.valueOf(50.0));
+    }
+
+    @Test
+    @DisplayName("Debe manejar checkout con donación extra cero")
+    void testProcesarCheckout_DonacionExtraCero() {
+        // Arrange
+        checkoutRequest.setDonacionExtra(0.0);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getTotal()).isEqualByComparingTo(BigDecimal.valueOf(50.0));
     }
 }
 
