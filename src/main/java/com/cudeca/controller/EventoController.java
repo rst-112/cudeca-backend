@@ -3,6 +3,7 @@ package com.cudeca.controller;
 import com.cudeca.dto.evento.EventoDTO;
 import com.cudeca.dto.usuario.EventCreationRequest;
 import com.cudeca.service.EventoService;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ public class EventoController {
     private final EventoService eventoService;
 
     @Autowired
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP2", justification = "EventoService is a Spring-managed bean")
     public EventoController(EventoService eventoService) {
         this.eventoService = eventoService;
     }

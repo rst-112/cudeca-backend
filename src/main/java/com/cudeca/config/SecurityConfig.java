@@ -23,7 +23,7 @@ import java.util.List;
  * Define la cadena de filtros HTTP, las políticas CORS, y las reglas de autorización.
  */
 @Configuration
-@EnableWebSecurity // Habilita las funcionalidades de seguridad web de Spring
+@EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
