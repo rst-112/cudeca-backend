@@ -306,4 +306,3 @@ public class CheckoutServiceImpl implements CheckoutService {
         log.info("Todos los asientos bloqueados exitosamente");
     }
 }
-
