@@ -1,6 +1,7 @@
 package com.cudeca.config;
 
 import com.cudeca.service.AuthService;
+import com.cudeca.service.CheckoutService;
 import com.cudeca.service.EmailService;
 import com.cudeca.service.JwtService;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +54,12 @@ class SecurityConfigTest {
         @Primary
         public EmailService emailService() {
             return mock(EmailService.class);
+        }
+
+        @Bean
+        @Primary
+        public CheckoutService checkoutService() {
+            return mock(CheckoutService.class);
         }
 
         @Bean
