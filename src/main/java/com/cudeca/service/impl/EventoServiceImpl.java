@@ -7,6 +7,8 @@ import com.cudeca.exception.ResourceNotFoundException;
 import com.cudeca.model.evento.Evento;
 import com.cudeca.repository.EventoRepository;
 import com.cudeca.service.EventoService;
+import com.cudeca.service.SeatMapService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,11 +20,15 @@ public class EventoServiceImpl implements EventoService {
 
     private final EventoRepository eventoRepository;
     private final EventoMapper eventoMapper;
+    private final SeatMapService seatMapService;
 
     @Autowired
-    public EventoServiceImpl(EventoRepository eventoRepository, EventoMapper eventoMapper) {
+    public EventoServiceImpl(EventoRepository eventoRepository,
+                             EventoMapper eventoMapper,
+                             SeatMapService seatMapService) {
         this.eventoRepository = eventoRepository;
         this.eventoMapper = eventoMapper;
+        this.seatMapService = seatMapService;
     }
 
     @Override
@@ -40,9 +46,17 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    @Transactional
     public EventoDTO createEvento(EventCreationRequest request) {
+        // 1. Guardar el evento base
         Evento evento = eventoMapper.toEvento(request);
         Evento savedEvento = eventoRepository.save(evento);
+
+        // 2. Procesar el mapa si viene en la petición
+        if (request.getLayout() != null) {
+            seatMapService.guardarDiseño(savedEvento, request.getLayout());
+        }
+
         return eventoMapper.toEventoDTO(savedEvento);
     }
 

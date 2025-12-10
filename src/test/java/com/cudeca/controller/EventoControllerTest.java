@@ -11,12 +11,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -36,7 +38,7 @@ class EventoControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private EventoService eventoService;
 
     @Autowired
@@ -75,6 +77,9 @@ class EventoControllerTest {
         // Arrange
         EventCreationRequest request = new EventCreationRequest();
         request.setNombre("New Event");
+        request.setFechaInicio(OffsetDateTime.now().plusDays(10));
+        request.setLugar("Test Location");
+        request.setObjetivoRecaudacion(BigDecimal.valueOf(1000));
 
         EventoDTO createdDto = new EventoDTO();
         createdDto.setId(1L);
@@ -96,6 +101,9 @@ class EventoControllerTest {
         Long id = 1L;
         EventCreationRequest request = new EventCreationRequest();
         request.setNombre("Updated Event");
+        request.setFechaInicio(OffsetDateTime.now().plusDays(15));
+        request.setLugar("Updated Location");
+        request.setObjetivoRecaudacion(BigDecimal.valueOf(2000));
 
         EventoDTO updatedDto = new EventoDTO();
         updatedDto.setId(id);
@@ -132,6 +140,36 @@ class EventoControllerTest {
 
         // Act & Assert
         mockMvc.perform(patch("/api/eventos/{id}/publicar", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id));
+    }
+
+    @Test
+    void cancelarEvento_ShouldReturnOk() throws Exception {
+        // Arrange
+        Long id = 1L;
+        EventoDTO canceledDto = new EventoDTO();
+        canceledDto.setId(id);
+
+        when(eventoService.cancelarEvento(id)).thenReturn(canceledDto);
+
+        // Act & Assert
+        mockMvc.perform(patch("/api/eventos/{id}/cancelar", id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id));
+    }
+
+    @Test
+    void finalizarEvento_ShouldReturnOk() throws Exception {
+        // Arrange
+        Long id = 1L;
+        EventoDTO finalizedDto = new EventoDTO();
+        finalizedDto.setId(id);
+
+        when(eventoService.finalizarEvento(id)).thenReturn(finalizedDto);
+
+        // Act & Assert
+        mockMvc.perform(patch("/api/eventos/{id}/finalizar", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id));
     }

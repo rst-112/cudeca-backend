@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Entidad que representa un asiento o localidad física en un recinto de evento.
@@ -39,6 +41,11 @@ public class Asiento {
     @Column(nullable = false)
     @Builder.Default
     private EstadoAsiento estado = EstadoAsiento.LIBRE;
+
+    // Aquí guardaremos: {"x": 100, "y": 200, "forma": "circulo"}
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metadata_visual", columnDefinition = "jsonb")
+    private String metadataVisual;
 
     // --- RELACIONES ---
 
