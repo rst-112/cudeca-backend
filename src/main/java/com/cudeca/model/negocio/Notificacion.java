@@ -4,6 +4,9 @@ import com.cudeca.model.enums.EstadoNotificacion;
 import com.cudeca.model.usuario.Usuario;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.Instant;
 
 @Entity
@@ -43,9 +46,8 @@ public class Notificacion {
     @Column(nullable = false, length = 255)
     private String destino;
 
-    // SQL: payload_json JSONB (en PostgreSQL), TEXT (en H2)
-    // Guardamos el JSON como String para simplificar el mapeo en Java
-    @Column(name = "payload_json", columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "payload_json", columnDefinition = "TEXT")
     private String payloadJson;
 
     // --- ESTADO Y CONTROL ---

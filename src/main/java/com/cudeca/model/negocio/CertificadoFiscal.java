@@ -5,6 +5,9 @@ import com.cudeca.model.usuario.DatosFiscales;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -49,7 +52,8 @@ public class CertificadoFiscal {
     @Column(name = "hash_documento", length = 120)
     private String hashDocumento;
 
-    @Column(name = "datos_snapshot_json", columnDefinition = "JSONB")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "datos_snapshot_json", columnDefinition = "TEXT")
     private String datosSnapshotJson;
 
     @PrePersist

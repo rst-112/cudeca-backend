@@ -37,7 +37,7 @@ public class Recibo {
 
     // SQL: resumen VARCHAR
     // String normal - VARCHAR en la BD
-    @Column(name = "resumen")
+    @Column(columnDefinition = "TEXT")
     private String resumen;
 
     // --- CICLO DE VIDA ---
