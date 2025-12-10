@@ -523,5 +523,188 @@ class CheckoutServiceImplTest {
         assertThat(response).isNotNull();
         assertThat(response.getTotal()).isEqualByComparingTo(BigDecimal.valueOf(50.0));
     }
+
+    @Test
+    @DisplayName("Debe procesar item de tipo DONACION correctamente")
+    void testProcesarCheckout_ItemDonacion() {
+        // Arrange
+        CheckoutRequest.ItemDTO itemDonacion = new CheckoutRequest.ItemDTO();
+        itemDonacion.setTipo("DONACION");
+        itemDonacion.setReferenciaId(null);
+        itemDonacion.setCantidad(1);
+        itemDonacion.setPrecio(20.0);
+
+        checkoutRequest.setItems(List.of(itemDonacion));
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        verify(compraRepository).save(any(Compra.class));
+    }
+
+    @Test
+    @DisplayName("Debe procesar item de tipo SORTEO correctamente")
+    void testProcesarCheckout_ItemSorteo() {
+        // Arrange
+        CheckoutRequest.ItemDTO itemSorteo = new CheckoutRequest.ItemDTO();
+        itemSorteo.setTipo("SORTEO");
+        itemSorteo.setReferenciaId(1L);
+        itemSorteo.setCantidad(3);
+        itemSorteo.setPrecio(15.0);
+
+        checkoutRequest.setItems(List.of(itemSorteo));
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        verify(compraRepository).save(any(Compra.class));
+        verify(tipoEntradaRepository).findById(1L);
+    }
+
+    @Test
+    @DisplayName("Debe calcular correctamente el total de la compra")
+    void testCalcularTotal_Correcto() {
+        // Arrange
+        CheckoutRequest.ItemDTO item1 = new CheckoutRequest.ItemDTO();
+        item1.setTipo("ENTRADA");
+        item1.setReferenciaId(1L);
+        item1.setCantidad(1);
+        item1.setPrecio(25.0);
+
+        CheckoutRequest.ItemDTO item2 = new CheckoutRequest.ItemDTO();
+        item2.setTipo("ENTRADA");
+        item2.setReferenciaId(1L);
+        item2.setCantidad(1);
+        item2.setPrecio(25.0);
+
+        checkoutRequest.setItems(List.of(item1, item2));
+        checkoutRequest.setDonacionExtra(10.0);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        // Total: 2 entradas (25+25) + donación (10) = 60
+        assertThat(response.getTotal()).isEqualByComparingTo(BigDecimal.valueOf(60.0));
+    }
+
+    @Test
+    @DisplayName("Debe verificar estado de compra en confirmarPago")
+    void testConfirmarPago_VerificarEstado() {
+        // Arrange
+        Compra compra = Compra.builder()
+                .id(1L)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.findById(1L)).thenReturn(Optional.of(compra));
+        when(compraRepository.save(any(Compra.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        boolean resultado = checkoutService.confirmarPago(1L);
+
+        // Assert
+        assertThat(resultado).isTrue();
+
+        ArgumentCaptor<Compra> compraCaptor = ArgumentCaptor.forClass(Compra.class);
+        verify(compraRepository).save(compraCaptor.capture());
+
+        Compra compraActualizada = compraCaptor.getValue();
+        assertThat(compraActualizada.getEstado()).isEqualTo(EstadoCompra.COMPLETADA);
+    }
+
+    @Test
+    @DisplayName("Debe verificar estado de compra en cancelarCompra")
+    void testCancelarCompra_VerificarEstado() {
+        // Arrange
+        Compra compra = Compra.builder()
+                .id(1L)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.findById(1L)).thenReturn(Optional.of(compra));
+        when(compraRepository.save(any(Compra.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        boolean resultado = checkoutService.cancelarCompra(1L, "Test cancellation");
+
+        // Assert
+        assertThat(resultado).isTrue();
+
+        ArgumentCaptor<Compra> compraCaptor = ArgumentCaptor.forClass(Compra.class);
+        verify(compraRepository).save(compraCaptor.capture());
+
+        Compra compraActualizada = compraCaptor.getValue();
+        assertThat(compraActualizada.getEstado()).isEqualTo(EstadoCompra.CANCELADA);
+    }
+
+    @Test
+    @DisplayName("Debe manejar compra con estado CANCELADA")
+    void testObtenerDetallesCompra_CompraCancelada() {
+        // Arrange
+        Compra compra = Compra.builder()
+                .id(1L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.CANCELADA)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.findById(1L)).thenReturn(Optional.of(compra));
+
+        // Act
+        CheckoutResponse response = checkoutService.obtenerDetallesCompra(1L);
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getEstado()).isEqualTo("CANCELADA");
+    }
 }
 
