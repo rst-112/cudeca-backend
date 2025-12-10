@@ -3,6 +3,7 @@ package com.cudeca.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -55,6 +56,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Permite acceso a rutas de autenticación públicas (login, register) y Swagger (Sin token)
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/public/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                        // Permite acceso PÚBLICO a la lista de eventos y al detalle de un evento
+                        .requestMatchers(HttpMethod.GET, "/api/eventos", "/api/eventos/**").permitAll()
                         // Cualquier otra petición debe estar autenticada (incluyendo /api/auth/validate)
                         .anyRequest().authenticated()
                 )
@@ -80,7 +83,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "https://cudeca-frontend.vercel.app"));
 
         // Métodos y cabeceras permitidas
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*")); // Permite todas las cabeceras
         configuration.setAllowCredentials(true); // Permite cookies y cabeceras de auth
 
