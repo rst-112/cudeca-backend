@@ -134,7 +134,7 @@ public class DatosFiscalesServiceImpl implements DatosFiscalesService {
         }
 
         // Normalizar: convertir a mayúsculas y eliminar espacios
-        String nifNormalizado = nif.trim().toUpperCase();
+        String nifNormalizado = nif.trim().toUpperCase(java.util.Locale.ROOT);
 
         // Validar formato básico
         if (!NIF_PATTERN.matcher(nifNormalizado).matches()) {

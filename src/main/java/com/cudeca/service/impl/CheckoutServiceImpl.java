@@ -196,7 +196,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     }
 
     private ArticuloCompra crearArticulo(CheckoutRequest.ItemDTO itemDTO) {
-        TipoItem tipoItem = TipoItem.valueOf(itemDTO.getTipo().toUpperCase());
+        TipoItem tipoItem = TipoItem.valueOf(itemDTO.getTipo().toUpperCase(java.util.Locale.ROOT));
 
         return switch (tipoItem) {
             case ENTRADA -> crearArticuloEntrada(itemDTO);
