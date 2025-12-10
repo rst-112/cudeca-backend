@@ -2,7 +2,6 @@ package com.cudeca.service.impl;
 
 import com.cudeca.dto.UserProfileDTO;
 import com.cudeca.model.negocio.Monedero;
-import com.cudeca.model.usuario.Comprador;
 import com.cudeca.model.usuario.Rol;
 import com.cudeca.model.usuario.Usuario;
 import com.cudeca.repository.MonederoRepository;
@@ -143,12 +142,10 @@ public class PerfilUsuarioServiceImpl implements PerfilUsuarioService {
 
     private BigDecimal obtenerSaldoMonedero(Usuario usuario) {
         try {
-            // Si el usuario es un Comprador, intentar obtener su monedero
-            if (usuario instanceof Comprador) {
-                Optional<Monedero> monedero = monederoRepository.findByComprador_Id(usuario.getId());
-                if (monedero.isPresent()) {
-                    return monedero.get().getSaldo();
-                }
+            // Buscar el monedero del usuario por su ID
+            Optional<Monedero> monedero = monederoRepository.findByUsuario_Id(usuario.getId());
+            if (monedero.isPresent()) {
+                return monedero.get().getSaldo();
             }
         } catch (Exception e) {
             log.warn("Error al obtener saldo del monedero para usuario ID: {}", usuario.getId(), e);
@@ -268,11 +265,7 @@ public class PerfilUsuarioServiceImpl implements PerfilUsuarioService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException(USUARIO_NO_ENCONTRADO + usuarioId));
 
-        if (!(usuario instanceof Comprador)) {
-            throw new IllegalArgumentException("El usuario no es un comprador y no tiene monedero");
-        }
-
-        return monederoRepository.findByComprador_Id(usuarioId)
+        return monederoRepository.findByUsuario_Id(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "El usuario no tiene monedero configurado: " + usuarioId));
     }

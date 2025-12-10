@@ -65,7 +65,7 @@ class AsientoConcurrencyTest {
         evento = Evento.builder()
                 .nombre("Concierto de Prueba Concurrencia")
                 .descripcion("Evento para probar bloqueos")
-                .fechaInicio(java.time.Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS))
+                .fechaInicio(java.time.OffsetDateTime.now().plus(30, java.time.temporal.ChronoUnit.DAYS))
                 .build();
         evento = eventoRepository.save(evento);
 

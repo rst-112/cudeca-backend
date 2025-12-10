@@ -1,6 +1,6 @@
 package com.cudeca.service.impl;
 
-import com.cudeca.model.usuario.Comprador;
+import com.cudeca.model.usuario.Usuario;
 import com.cudeca.model.usuario.DatosFiscales;
 import com.cudeca.repository.DatosFiscalesRepository;
 import com.cudeca.repository.UsuarioRepository;
@@ -37,13 +37,13 @@ class DatosFiscalesServiceImplTest {
     @InjectMocks
     private DatosFiscalesServiceImpl datosFiscalesService;
 
-    private Comprador usuario;
+    private Usuario usuario;
     private DatosFiscales datosFiscales;
 
     @BeforeEach
     void setUp() {
         // Usuario de prueba
-        usuario = new Comprador();
+        usuario = new Usuario();
         usuario.setId(1L);
         usuario.setNombre("María García");
         usuario.setEmail("maria@example.com");
@@ -176,7 +176,7 @@ class DatosFiscalesServiceImplTest {
     @DisplayName("Debe lanzar excepción al actualizar datos de otro usuario")
     void testActualizarDatosFiscales_UsuarioDiferente() {
         // Arrange
-        Comprador otroUsuario = new Comprador();
+        Usuario otroUsuario = new Usuario();
         otroUsuario.setId(2L);
         datosFiscales.setUsuario(otroUsuario);
 
@@ -227,7 +227,7 @@ class DatosFiscalesServiceImplTest {
     @DisplayName("Debe lanzar excepción al eliminar datos de otro usuario")
     void testEliminarDatosFiscales_UsuarioDiferente() {
         // Arrange
-        Comprador otroUsuario = new Comprador();
+        Usuario otroUsuario = new Usuario();
         otroUsuario.setId(2L);
         datosFiscales.setUsuario(otroUsuario);
 
@@ -253,7 +253,7 @@ class DatosFiscalesServiceImplTest {
         datos2.setNif("B12345678");
         datos2.setUsuario(usuario);
 
-        when(datosFiscalesRepository.findByUsuarioId(1L))
+        when(datosFiscalesRepository.findByUsuario_Id(1L))
                 .thenReturn(java.util.Arrays.asList(datosFiscales, datos2));
 
         // Act
@@ -263,7 +263,7 @@ class DatosFiscalesServiceImplTest {
         assertThat(resultado)
                 .hasSize(2)
                 .contains(datosFiscales, datos2);
-        verify(datosFiscalesRepository).findByUsuarioId(1L);
+        verify(datosFiscalesRepository).findByUsuario_Id(1L);
     }
 
     @Test
@@ -283,7 +283,7 @@ class DatosFiscalesServiceImplTest {
     @DisplayName("No debe obtener datos fiscales de otro usuario")
     void testObtenerDatosFiscalesPorId_UsuarioDiferente() {
         // Arrange
-        Comprador otroUsuario = new Comprador();
+        Usuario otroUsuario = new Usuario();
         otroUsuario.setId(2L);
         datosFiscales.setUsuario(otroUsuario);
 
@@ -367,7 +367,7 @@ class DatosFiscalesServiceImplTest {
     @DisplayName("Debe retornar lista vacía si usuario no tiene datos fiscales")
     void testObtenerDatosFiscalesPorUsuario_ListaVacia() {
         // Arrange
-        when(datosFiscalesRepository.findByUsuarioId(1L)).thenReturn(java.util.Collections.emptyList());
+        when(datosFiscalesRepository.findByUsuario_Id(1L)).thenReturn(java.util.Collections.emptyList());
 
         // Act
         List<DatosFiscales> resultado = datosFiscalesService.obtenerDatosFiscalesPorUsuario(1L);

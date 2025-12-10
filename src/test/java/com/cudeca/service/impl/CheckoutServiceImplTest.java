@@ -5,7 +5,7 @@ import com.cudeca.dto.CheckoutResponse;
 import com.cudeca.model.enums.EstadoCompra;
 import com.cudeca.model.negocio.Compra;
 import com.cudeca.model.evento.TipoEntrada;
-import com.cudeca.model.usuario.Comprador;
+import com.cudeca.model.usuario.Usuario;
 import com.cudeca.model.usuario.Invitado;
 import com.cudeca.repository.CompraRepository;
 import com.cudeca.repository.InvitadoRepository;
@@ -56,14 +56,14 @@ class CheckoutServiceImplTest {
     @InjectMocks
     private CheckoutServiceImpl checkoutService;
 
-    private Comprador usuarioComprador;
+    private Usuario usuarioComprador;
     private TipoEntrada tipoEntrada;
     private CheckoutRequest checkoutRequest;
 
     @BeforeEach
     void setUp() {
         // Usuario comprador de prueba
-        usuarioComprador = new Comprador();
+        usuarioComprador = new Usuario();
         usuarioComprador.setId(1L);
         usuarioComprador.setNombre("Juan Pérez");
         usuarioComprador.setEmail("juan@example.com");
@@ -101,7 +101,7 @@ class CheckoutServiceImplTest {
                 .id(100L)
                 .usuario(usuarioComprador)
                 .estado(EstadoCompra.PENDIENTE)
-                .fecha(Instant.now())
+                .fecha(java.time.OffsetDateTime.now())
                 .articulos(new ArrayList<>())
                 .build();
 
@@ -147,7 +147,7 @@ class CheckoutServiceImplTest {
                 .id(100L)
                 .invitado(invitado)
                 .estado(EstadoCompra.PENDIENTE)
-                .fecha(Instant.now())
+                .fecha(java.time.OffsetDateTime.now())
                 .emailContacto("invitado@example.com")
                 .articulos(new ArrayList<>())
                 .build();
@@ -186,7 +186,7 @@ class CheckoutServiceImplTest {
                 .id(100L)
                 .invitado(nuevoInvitado)
                 .estado(EstadoCompra.PENDIENTE)
-                .fecha(Instant.now())
+                .fecha(java.time.OffsetDateTime.now())
                 .articulos(new ArrayList<>())
                 .build();
 
@@ -271,7 +271,7 @@ class CheckoutServiceImplTest {
         Compra compra = Compra.builder()
                 .id(1L)
                 .estado(EstadoCompra.PENDIENTE)
-                .fecha(Instant.now())
+                .fecha(java.time.OffsetDateTime.now())
                 .articulos(new ArrayList<>())
                 .build();
 
@@ -295,7 +295,7 @@ class CheckoutServiceImplTest {
         Compra compra = Compra.builder()
                 .id(1L)
                 .estado(EstadoCompra.COMPLETADA)
-                .fecha(Instant.now())
+                .fecha(java.time.OffsetDateTime.now())
                 .articulos(new ArrayList<>())
                 .build();
 
@@ -328,7 +328,7 @@ class CheckoutServiceImplTest {
         Compra compra = Compra.builder()
                 .id(1L)
                 .estado(EstadoCompra.PENDIENTE)
-                .fecha(Instant.now())
+                .fecha(java.time.OffsetDateTime.now())
                 .articulos(new ArrayList<>())
                 .build();
 
@@ -352,7 +352,7 @@ class CheckoutServiceImplTest {
         Compra compra = Compra.builder()
                 .id(1L)
                 .estado(EstadoCompra.COMPLETADA)
-                .fecha(Instant.now())
+                .fecha(java.time.OffsetDateTime.now())
                 .articulos(new ArrayList<>())
                 .build();
 
@@ -374,7 +374,7 @@ class CheckoutServiceImplTest {
                 .id(1L)
                 .usuario(usuarioComprador)
                 .estado(EstadoCompra.COMPLETADA)
-                .fecha(Instant.now())
+                .fecha(java.time.OffsetDateTime.now())
                 .articulos(new ArrayList<>())
                 .build();
 
@@ -414,7 +414,7 @@ class CheckoutServiceImplTest {
                 .id(100L)
                 .usuario(usuarioComprador)
                 .estado(EstadoCompra.PENDIENTE)
-                .fecha(Instant.now())
+                .fecha(java.time.OffsetDateTime.now())
                 .articulos(new ArrayList<>())
                 .build();
 
@@ -454,7 +454,7 @@ class CheckoutServiceImplTest {
                 .id(100L)
                 .usuario(usuarioComprador)
                 .estado(EstadoCompra.PENDIENTE)
-                .fecha(Instant.now())
+                .fecha(java.time.OffsetDateTime.now())
                 .articulos(new ArrayList<>())
                 .build();
 

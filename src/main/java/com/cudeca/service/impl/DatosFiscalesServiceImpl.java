@@ -113,7 +113,7 @@ public class DatosFiscalesServiceImpl implements DatosFiscalesService {
     @Transactional(readOnly = true)
     public List<DatosFiscales> obtenerDatosFiscalesPorUsuario(Long usuarioId) {
         log.debug("Obteniendo datos fiscales para usuario ID: {}", usuarioId);
-        return datosFiscalesRepository.findByUsuarioId(usuarioId);
+        return datosFiscalesRepository.findByUsuario_Id(usuarioId);
     }
 
     @Override

@@ -2,7 +2,7 @@ package com.cudeca.service.impl;
 
 import com.cudeca.dto.UserProfileDTO;
 import com.cudeca.model.negocio.Monedero;
-import com.cudeca.model.usuario.Comprador;
+import com.cudeca.model.usuario.Usuario;
 import com.cudeca.model.usuario.Rol;
 import com.cudeca.repository.MonederoRepository;
 import com.cudeca.repository.UsuarioRepository;
@@ -44,7 +44,7 @@ class PerfilUsuarioServiceImplTest {
     @InjectMocks
     private PerfilUsuarioServiceImpl perfilUsuarioService;
 
-    private Comprador usuario;
+    private Usuario usuario;
     private Rol rolComprador;
     private Monedero monedero;
 
@@ -56,7 +56,7 @@ class PerfilUsuarioServiceImplTest {
         rolComprador.setNombre("COMPRADOR");
 
         // Usuario de prueba
-        usuario = new Comprador();
+        usuario = new Usuario();
         usuario.setId(1L);
         usuario.setNombre("Carlos Martínez");
         usuario.setEmail("carlos@example.com");
@@ -70,7 +70,7 @@ class PerfilUsuarioServiceImplTest {
         monedero = new Monedero();
         monedero.setId(1L);
         monedero.setSaldo(BigDecimal.valueOf(50.00));
-        monedero.setComprador(usuario);
+        monedero.setUsuario(usuario);
     }
 
     @Test
@@ -78,7 +78,7 @@ class PerfilUsuarioServiceImplTest {
     void testObtenerPerfilPorId_Exitoso() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
 
         // Act
         UserProfileDTO resultado = perfilUsuarioService.obtenerPerfilPorId(1L);
@@ -93,7 +93,7 @@ class PerfilUsuarioServiceImplTest {
         assertThat(resultado.getSaldoMonedero()).isEqualByComparingTo(BigDecimal.valueOf(50.00));
 
         verify(usuarioRepository).findById(1L);
-        verify(monederoRepository).findByComprador_Id(1L);
+        verify(monederoRepository).findByUsuario_Id(1L);
     }
 
     @Test
@@ -108,7 +108,7 @@ class PerfilUsuarioServiceImplTest {
                 .hasMessageContaining("Usuario no encontrado");
 
         verify(usuarioRepository).findById(999L);
-        verify(monederoRepository, never()).findByComprador_Id(anyLong());
+        verify(monederoRepository, never()).findByUsuario_Id(anyLong());
     }
 
     @Test
@@ -117,7 +117,7 @@ class PerfilUsuarioServiceImplTest {
         // Arrange
         when(usuarioRepository.findByEmail("carlos@example.com"))
                 .thenReturn(Optional.of(usuario));
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
 
         // Act
         Optional<UserProfileDTO> resultado = perfilUsuarioService.obtenerPerfilPorEmail("carlos@example.com");
@@ -172,8 +172,8 @@ class PerfilUsuarioServiceImplTest {
     void testActualizarPerfil_Exitoso() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(usuarioRepository.save(any(Comprador.class))).thenReturn(usuario);
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
 
         // Act
         UserProfileDTO resultado = perfilUsuarioService.actualizarPerfil(
@@ -188,7 +188,7 @@ class PerfilUsuarioServiceImplTest {
         assertThat(resultado.getDireccion()).isEqualTo("Nueva Dirección 789");
 
         verify(usuarioRepository).findById(1L);
-        verify(usuarioRepository).save(any(Comprador.class));
+        verify(usuarioRepository).save(any(Usuario.class));
     }
 
     @Test
@@ -196,8 +196,8 @@ class PerfilUsuarioServiceImplTest {
     void testActualizarPerfil_SoloNombre() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(usuarioRepository.save(any(Comprador.class))).thenReturn(usuario);
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
 
         // Act
         UserProfileDTO resultado = perfilUsuarioService.actualizarPerfil(
@@ -219,8 +219,8 @@ class PerfilUsuarioServiceImplTest {
     void testActualizarPerfil_SoloDireccion() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(usuarioRepository.save(any(Comprador.class))).thenReturn(usuario);
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
 
         // Act
         UserProfileDTO resultado = perfilUsuarioService.actualizarPerfil(
@@ -258,8 +258,8 @@ class PerfilUsuarioServiceImplTest {
     void testActualizarPerfil_NombreVacio() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(usuarioRepository.save(any(Comprador.class))).thenReturn(usuario);
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
 
         // Act
         perfilUsuarioService.actualizarPerfil(1L, "   ", "Nueva Dirección");
@@ -358,7 +358,7 @@ class PerfilUsuarioServiceImplTest {
     void testObtenerPerfilPorId_SinMonedero() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.empty());
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.empty());
 
         // Act
         UserProfileDTO resultado = perfilUsuarioService.obtenerPerfilPorId(1L);
@@ -423,7 +423,7 @@ class PerfilUsuarioServiceImplTest {
     void testObtenerPerfilPorId_ErrorMonedero() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(monederoRepository.findByComprador_Id(1L))
+        when(monederoRepository.findByUsuario_Id(1L))
                 .thenThrow(new RuntimeException("Error de BD"));
 
         // Act
@@ -442,8 +442,8 @@ class PerfilUsuarioServiceImplTest {
         // Arrange
         String nombre100 = "A".repeat(100);
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(usuarioRepository.save(any(Comprador.class))).thenReturn(usuario);
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
 
         // Act
         UserProfileDTO resultado = perfilUsuarioService.actualizarPerfil(1L, nombre100, null);
@@ -460,8 +460,8 @@ class PerfilUsuarioServiceImplTest {
     void testActualizarPerfil_DireccionVacia() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(usuarioRepository.save(any(Comprador.class))).thenReturn(usuario);
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+        when(usuarioRepository.save(any(Usuario.class))).thenReturn(usuario);
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
 
         // Act
         UserProfileDTO resultado = perfilUsuarioService.actualizarPerfil(1L, null, "");
@@ -507,7 +507,7 @@ class PerfilUsuarioServiceImplTest {
     void testObtenerMonedero_Exitoso() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
 
         // Act
         var resultado = perfilUsuarioService.obtenerMonedero(1L);
@@ -515,7 +515,7 @@ class PerfilUsuarioServiceImplTest {
         // Assert
         assertThat(resultado).isNotNull();
         assertThat(resultado.getSaldo()).isEqualByComparingTo(BigDecimal.valueOf(50.00));
-        verify(monederoRepository).findByComprador_Id(1L);
+        verify(monederoRepository).findByUsuario_Id(1L);
     }
 
     @Test
@@ -535,7 +535,7 @@ class PerfilUsuarioServiceImplTest {
     void testObtenerMonedero_SinMonedero() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.empty());
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThatThrownBy(() -> perfilUsuarioService.obtenerMonedero(1L))
@@ -548,7 +548,7 @@ class PerfilUsuarioServiceImplTest {
     void testObtenerMovimientosMonedero_Exitoso() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.of(monedero));
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
 
         // Act
         var movimientos = perfilUsuarioService.obtenerMovimientosMonedero(1L);
@@ -556,7 +556,7 @@ class PerfilUsuarioServiceImplTest {
         // Assert
         assertThat(movimientos).isNotNull();
         assertThat(movimientos).hasSize(monedero.getMovimientos().size());
-        verify(monederoRepository).findByComprador_Id(1L);
+        verify(monederoRepository).findByUsuario_Id(1L);
     }
 
     @Test
@@ -564,7 +564,7 @@ class PerfilUsuarioServiceImplTest {
     void testObtenerMovimientosMonedero_SinMonedero() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        when(monederoRepository.findByComprador_Id(1L)).thenReturn(Optional.empty());
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThatThrownBy(() -> perfilUsuarioService.obtenerMovimientosMonedero(1L))

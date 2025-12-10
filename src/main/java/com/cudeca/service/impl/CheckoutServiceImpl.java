@@ -156,7 +156,7 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     private Compra crearCompra(CheckoutRequest request) {
         Compra.CompraBuilder builder = Compra.builder()
-                .fecha(Instant.now())
+                .fecha(java.time.OffsetDateTime.now())
                 .estado(EstadoCompra.PENDIENTE)
                 .emailContacto(request.getEmailContacto())
                 .articulos(new ArrayList<>());
@@ -213,12 +213,10 @@ public class CheckoutServiceImpl implements CheckoutService {
     }
 
     private ArticuloDonacion crearArticuloDonacion(CheckoutRequest.ItemDTO itemDTO) {
-        ArticuloDonacion articulo = new ArticuloDonacion();
-        articulo.setCantidad(itemDTO.getCantidad());
-        articulo.setPrecioUnitario(BigDecimal.valueOf(itemDTO.getPrecio()));
-        articulo.setSolicitaCertificado(false);
-        articulo.setDestino("General"); // Valor por defecto
-        return articulo;
+        return ArticuloDonacion.builder()
+                .cantidad(itemDTO.getCantidad())
+                .precioUnitario(BigDecimal.valueOf(itemDTO.getPrecio()))
+                .build();
     }
 
     private BigDecimal calcularTotal(Compra compra, Double donacionExtra) {
