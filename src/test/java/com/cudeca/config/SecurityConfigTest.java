@@ -1,9 +1,6 @@
 package com.cudeca.config;
 
-import com.cudeca.service.AuthService;
-import com.cudeca.service.CheckoutService;
-import com.cudeca.service.EmailService;
-import com.cudeca.service.JwtService;
+import com.cudeca.service.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +57,18 @@ class SecurityConfigTest {
         @Primary
         public CheckoutService checkoutService() {
             return mock(CheckoutService.class);
+        }
+
+        @Bean
+        @Primary
+        public DatosFiscalesService datosFiscalesService() {
+            return mock(DatosFiscalesService.class);
+        }
+
+        @Bean
+        @Primary
+        public PerfilUsuarioService perfilUsuarioService() {
+            return mock(PerfilUsuarioService.class);
         }
 
         @Bean
