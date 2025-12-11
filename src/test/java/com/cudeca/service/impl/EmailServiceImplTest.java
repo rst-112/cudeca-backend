@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Properties;
 
@@ -26,6 +27,7 @@ class EmailServiceImplTest {
     void setUp() {
         mailSender = mock(JavaMailSender.class);
         emailServiceImpl = new EmailServiceImpl(mailSender);
+        ReflectionTestUtils.setField(emailServiceImpl, "senderEmail", "noreply@cudeca.org");
     }
 
     @Test
