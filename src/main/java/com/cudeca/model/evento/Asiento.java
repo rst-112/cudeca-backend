@@ -44,7 +44,7 @@ public class Asiento {
 
     // Aquí guardaremos: {"x": 100, "y": 200, "forma": "circulo"}
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata_visual", columnDefinition = "jsonb")
+    @Column(name = "metadata_visual")
     private String metadataVisual;
 
     // --- RELACIONES ---
