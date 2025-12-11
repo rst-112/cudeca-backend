@@ -37,7 +37,7 @@ public class ZonaRecinto {
     private Integer aforoTotal;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "objetos_decorativos", columnDefinition = "jsonb")
+    @Column(name = "objetos_decorativos")
     private String objetosDecorativos;
 
     // --- RELACIONES ---
