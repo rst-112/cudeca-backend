@@ -1,15 +1,28 @@
 spring:
   profiles:
-    default: dev # Perfil por defecto
----
+    default: dev
 
+# ==========================================
+# CONFIGURACIÓN GLOBAL (Aplica a Dev y Prod)
+# ==========================================
+application:
+  security:
+    jwt:
+      # Clave secreta para firmar los tokens (Base64)
+      # Se lee de la variable de entorno JWT_SECRET_KEY. Si no existe, usa el valor por defecto.
+      secret-key: ${JWT_SECRET_KEY:rN8skz5ksunBA2xbiWLw7ir+wrBou6Zx8HppAlkJUh0=}
+      expiration: 86400000 # 24 horas
+
+---
+# ==========================================
+# PERFIL DEV (Local - Docker)
+# ==========================================
 spring:
   config:
     activate:
       on-profile: dev # Configuración para el perfil 'dev'
 
   datasource:
-    # === ¡¡¡IMPORTANTE!!! Revisa que estos datos coincidan con tu BD local ===
     url: jdbc:postgresql://localhost:5432/cudeca_db
     username: cudeca_user
     password: password_seguro
@@ -30,6 +43,7 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
+  # Configuración de correo para MailHog (Local)
   mail:
     host: localhost
     port: 1025
@@ -41,9 +55,6 @@ spring:
         smtp:
           auth: false
           starttls.enable: false
-          connectiontimeout: 5000
-          timeout: 5000
-          writetimeout: 5000
         mime:
           charset: UTF-8
 
@@ -64,7 +75,9 @@ server:
   port: ${SERVER_PORT:8080}
 
 ---
-
+# ==========================================
+# PERFIL PROD (Nube - Render/Neon/Brevo)
+# ==========================================
 spring:
   config:
     activate:
@@ -89,11 +102,12 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
+  # Configuración de correo para Brevo/SMTP (Nube)
   mail:
-    host: ${SPRING_MAIL_HOST:localhost}
+    host: ${SPRING_MAIL_HOST:smtp-relay.brevo.com}
     port: ${SPRING_MAIL_PORT:587}
-    username: ${SPRING_MAIL_USERNAME:}
-    password: ${SPRING_MAIL_PASSWORD:}
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
     default-encoding: UTF-8
     properties:
       mail:
@@ -109,7 +123,7 @@ spring:
 
   springdoc:
     swagger-ui:
-      enabled: false
+      enabled: false # Swagger desactivado en producción por seguridad
 
 logging:
   file:

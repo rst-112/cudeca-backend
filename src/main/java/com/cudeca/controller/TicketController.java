@@ -1,6 +1,8 @@
 package com.cudeca.controller;
 
-import com.cudeca.model.dto.TicketDTO;
+import com.cudeca.dto.TicketDTO;
+import com.cudeca.model.negocio.EntradaEmitida;
+import com.cudeca.repository.EntradaEmitidaRepository;
 import com.cudeca.service.TicketService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -9,137 +11,102 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.time.format.DateTimeFormatter;
 
-/**
- * Controlador para gestionar la generación y envío de tickets de eventos.
- *
- * Expone endpoints para:
- * 1. Generar y enviar tickets por correo (con PDF y QR)
- * 2. Descargar PDF del ticket sin enviar correo
- * 3. Verificar el estado del servicio
- */
 @RestController
 @RequestMapping("/api/tickets")
 @RequiredArgsConstructor
-@Tag(name = "Tickets", description = "API para gestión de tickets de eventos con PDF y códigos QR")
+@Tag(name = "Tickets", description = "Gestión segura de tickets")
 public class TicketController {
 
     private final TicketService ticketService;
+    private final EntradaEmitidaRepository entradaRepository;
 
     /**
-     * Genera un ticket completo (PDF + QR) y lo envía por correo.
-     *
-     * POST /api/tickets/generar-y-enviar
-     *
-     * Ejemplo de JSON:
-     * {
-     *     "nombreEvento": "Concierto CUDECA 2024",
-     *     "lugarEvento": "Palacio de Congresos",
-     *     "fechaEventoFormato": "15/12/2024 20:00",
-     *     "descripcionEvento": "Concierto solidario",
-     *     "nombreUsuario": "Juan Pérez",
-     *     "emailUsuario": "juan@example.com",
-     *     "codigoAsiento": "A-001",
-     *     "fila": 5,
-     *     "columna": 12,
-     *     "zonaRecinto": "Zona Premium",
-     *     "codigoQR": "TICKET-2024-001-A",
-     *     "tipoEntrada": "Entrada Vip",
-     *     "precio": "50€"
-     * }
-     *
-     * @param ticketDTO Datos del ticket a generar
-     * @return ResponseEntity con estado del envío
+     * Descarga el PDF de una entrada.
+     * SEGURIDAD: Busca los datos en BD usando el ID, no acepta DTOs externos.
      */
-    @PostMapping("/generar-y-enviar")
-    @Operation(summary = "Generar ticket y enviar por correo",
-            description = "Genera un PDF con QR y lo envía al usuario por correo electrónico")
-    public ResponseEntity<Map<String, Object>> generarYEnviarTicket(@RequestBody TicketDTO ticketDTO) {
+    @GetMapping("/{entradaId}/pdf")
+    @Operation(summary = "Descargar PDF oficial")
+    public ResponseEntity<byte[]> descargarTicketPDF(@PathVariable Long entradaId) {
         try {
-            boolean exitoso = ticketService.generarYEnviarTicket(ticketDTO);
+            // 1. Buscar datos reales en BD (Fuente de la verdad)
+            EntradaEmitida entrada = entradaRepository.findById(entradaId)
+                    .orElseThrow(() -> new IllegalArgumentException("Entrada no encontrada"));
 
-            if (exitoso) {
-                return ResponseEntity.ok(Map.of(
-                        "status", "success",
-                        "message", "Ticket generado y enviado correctamente",
-                        "email", ticketDTO.getEmailUsuario(),
-                        "codigoTicket", ticketDTO.getCodigoAsiento()
-                ));
-            } else {
-                return ResponseEntity.status(500).body(Map.of(
-                        "status", "error",
-                        "message", "Error al generar o enviar el ticket"
-                ));
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of(
-                    "status", "error",
-                    "message", "Error inesperado: " + e.getMessage()
-            ));
-        }
-    }
+            // 2. Mapear Entidad -> DTO (Lógica segura en el backend)
+            TicketDTO ticketDTO = mapearEntradaADTO(entrada);
 
-    /**
-     * Descarga directa del PDF del ticket sin enviar correo.
-     *
-     * POST /api/tickets/descargar-pdf
-     *
-     * Útil para:
-     * - Descargas manuales desde interfaz web
-     * - Tickets sin envío de correo
-     * - Reimpresión de tickets
-     *
-     * @param ticketDTO Datos del ticket
-     * @return ResponseEntity con el PDF para descargar
-     */
-    @PostMapping("/descargar-pdf")
-    @Operation(summary = "Descargar PDF del ticket",
-            description = "Genera y descarga el PDF del ticket sin enviar correo")
-    public ResponseEntity<byte[]> descargarTicketPDF(@RequestBody TicketDTO ticketDTO) {
-        try {
+            // 3. Generar PDF
             byte[] pdfBytes = ticketService.generarTicketPdf(ticketDTO);
 
-            // Configurar headers para descarga de PDF
-            String nombreArchivo = "ticket-" + ticketDTO.getCodigoAsiento() + ".pdf";
-
+            String nombreArchivo = "ticket-" + entrada.getCodigoQR() + ".pdf";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDisposition(
-                    ContentDisposition.attachment()
-                            .filename(nombreArchivo, StandardCharsets.UTF_8)
-                            .build()
-            );
+            headers.setContentDisposition(ContentDisposition.attachment()
+                    .filename(nombreArchivo, StandardCharsets.UTF_8).build());
             headers.setContentLength(pdfBytes.length);
 
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .body(pdfBytes);
+            return ResponseEntity.ok().headers(headers).body(pdfBytes);
 
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).build();
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
         }
     }
 
-    /**
-     * Endpoint de prueba para validar que el servicio de tickets está activo.
-     *
-     * GET /api/tickets/health
-     *
-     * @return Estado del servicio
-     */
-    @GetMapping("/health")
-    @Operation(summary = "Verificar estado del servicio",
-            description = "Verifica que el servicio de tickets está funcionando")
-    public ResponseEntity<Map<String, String>> health() {
-        return ResponseEntity.ok(Map.of(
-                "status", "ok",
-                "message", "Servicio de tickets activo",
-                "versión", "1.0"
-        ));
+    // Endpoint administrativo para re-enviar correos perdidos
+    @PostMapping("/{entradaId}/reenviar-email")
+    @PreAuthorize("hasRole('ADMIN')") // Solo admins pueden forzar reenvío
+    public ResponseEntity<?> reenviarEmail(@PathVariable Long entradaId) {
+        try {
+            EntradaEmitida entrada = entradaRepository.findById(entradaId)
+                    .orElseThrow(() -> new IllegalArgumentException("Entrada no encontrada"));
+
+            // Reconstruimos el DTO con datos fiables de la BD
+            TicketDTO ticketDTO = mapearEntradaADTO(entrada);
+
+            // Usamos el servicio existente
+            ticketService.generarYEnviarTicket(ticketDTO);
+
+            return ResponseEntity.ok().body("Correo reenviado correctamente");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(404).body("Entrada no encontrada");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error enviando correo");
+        }
+    }
+
+    // Método auxiliar de mapeo (Esto extrae los datos reales de las relaciones JPA)
+    private TicketDTO mapearEntradaADTO(EntradaEmitida entrada) {
+        var articulo = entrada.getArticuloEntrada();
+        var compra = articulo.getCompra();
+        var evento = articulo.getTipoEntrada().getEvento();
+        var usuario = compra.getUsuario();
+
+        String nombreUser = (usuario != null) ? usuario.getNombre() : "Invitado";
+        String emailUser = (usuario != null) ? usuario.getEmail() : compra.getEmailContacto();
+
+        // Construir el DTO con datos de BD
+        return TicketDTO.builder()
+                .nombreEvento(evento.getNombre())
+                .lugarEvento(evento.getLugar())
+                .fechaEventoFormato(evento.getFechaInicio().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")))
+                .descripcionEvento(evento.getDescripcion())
+                .nombreUsuario(nombreUser)
+                .emailUsuario(emailUser)
+                .codigoAsiento(articulo.getAsiento() != null ? articulo.getAsiento().getCodigoEtiqueta() : "General")
+                .fila(articulo.getAsiento() != null ? articulo.getAsiento().getFila() : null)
+                .columna(articulo.getAsiento() != null ? articulo.getAsiento().getColumna() : null)
+                .zonaRecinto(articulo.getAsiento() != null ? articulo.getAsiento().getZona().getNombre() : "General")
+                .codigoQR(entrada.getCodigoQR())
+                .tipoEntrada(articulo.getTipoEntrada().getNombre())
+                .precio(articulo.getPrecioUnitario() + "€")
+                .build();
     }
 }
-

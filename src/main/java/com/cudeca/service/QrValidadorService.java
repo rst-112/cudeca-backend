@@ -1,11 +1,11 @@
 package com.cudeca.service;
 
-import com.cudeca.model.dto.QrValidacionDTO;
-import com.cudeca.model.dto.QrValidacionResponseDTO;
+import com.cudeca.dto.QrValidacionDTO;
+import com.cudeca.dto.QrValidacionResponseDTO;
 
 /**
  * Interfaz para la validación de códigos QR de entradas.
- *
+ * <p>
  * Responsabilidades:
  * 1. Buscar la entrada por hash del QR
  * 2. Validar que el estado sea VALIDA
@@ -17,7 +17,7 @@ public interface QrValidadorService {
 
     /**
      * Valida una entrada por su código QR.
-     *
+     * <p>
      * Proceso:
      * 1. Busca la entrada por codigoQR
      * 2. Si no existe, devuelve error

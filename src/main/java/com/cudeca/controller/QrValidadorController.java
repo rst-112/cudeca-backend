@@ -1,7 +1,7 @@
 package com.cudeca.controller;
 
-import com.cudeca.model.dto.QrValidacionDTO;
-import com.cudeca.model.dto.QrValidacionResponseDTO;
+import com.cudeca.dto.QrValidacionDTO;
+import com.cudeca.dto.QrValidacionResponseDTO;
 import com.cudeca.service.QrValidadorService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Controlador para validación de códigos QR de entradas.
- *
+ * <p>
  * Endpoints:
  * 1. POST /api/validador-qr/validar - Valida un QR y cambia estado a USADA
  * 2. GET /api/validador-qr/consultar/{codigoQR} - Consulta estado sin cambiar
- *
+ * <p>
  * Casos de respuesta:
  * - 200 OK: Validación exitosa
  * - 400 Bad Request: Entrada no encontrada o ya usada
@@ -37,32 +37,32 @@ public class QrValidadorController {
 
     /**
      * Valida un código QR y cambia el estado de la entrada de VALIDA a USADA.
-     *
+     * <p>
      * POST /api/validador-qr/validar
-     *
+     * <p>
      * Ejemplo de solicitud:
      * {
-     *     "codigoQR": "TICKET-2024-001-A",
-     *     "dispositivoId": "DEVICE-SCANNER-001"
+     * "codigoQR": "TICKET-2024-001-A",
+     * "dispositivoId": "DEVICE-SCANNER-001"
      * }
-     *
+     * <p>
      * Respuesta exitosa (200):
      * {
-     *     "estado": "OK",
-     *     "mensaje": "Entrada validada exitosamente. Estado cambiado a USADA.",
-     *     "entradaId": 123,
-     *     "codigoQR": "TICKET-2024-001-A",
-     *     "estadoAnterior": "VALIDA",
-     *     "estadoActual": "USADA",
-     *     "timestamp": 1702000000000
+     * "estado": "OK",
+     * "mensaje": "Entrada validada exitosamente. Estado cambiado a USADA.",
+     * "entradaId": 123,
+     * "codigoQR": "TICKET-2024-001-A",
+     * "estadoAnterior": "VALIDA",
+     * "estadoActual": "USADA",
+     * "timestamp": 1702000000000
      * }
-     *
+     * <p>
      * Respuesta con error (400):
      * {
-     *     "estado": "ERROR_NO_ENCONTRADO",
-     *     "mensaje": "Código QR no válido. La entrada no existe en el sistema.",
-     *     "codigoQR": "INVALID-CODE",
-     *     "timestamp": 1702000000000
+     * "estado": "ERROR_NO_ENCONTRADO",
+     * "mensaje": "Código QR no válido. La entrada no existe en el sistema.",
+     * "codigoQR": "INVALID-CODE",
+     * "timestamp": 1702000000000
      * }
      *
      * @param qrValidacionDTO DTO con el código QR a validar
@@ -126,17 +126,17 @@ public class QrValidadorController {
 
     /**
      * Consulta el estado de una entrada por su código QR sin cambiar el estado.
-     *
+     * <p>
      * GET /api/validador-qr/consultar/{codigoQR}
-     *
+     * <p>
      * Ejemplo de respuesta (200):
      * {
-     *     "estado": "ENCONTRADA",
-     *     "mensaje": "Entrada encontrada en el sistema.",
-     *     "entradaId": 123,
-     *     "codigoQR": "TICKET-2024-001-A",
-     *     "estadoActual": "VALIDA",
-     *     "timestamp": 1702000000000
+     * "estado": "ENCONTRADA",
+     * "mensaje": "Entrada encontrada en el sistema.",
+     * "entradaId": 123,
+     * "codigoQR": "TICKET-2024-001-A",
+     * "estadoActual": "VALIDA",
+     * "timestamp": 1702000000000
      * }
      *
      * @param codigoQR Código QR a consultar

@@ -1,6 +1,6 @@
 package com.cudeca.service;
 
-import com.cudeca.model.dto.TicketDTO;
+import com.cudeca.dto.TicketDTO;
 
 /**
  * Interfaz para la generación de PDFs de tickets.
@@ -26,7 +26,7 @@ public interface PdfService {
      * Genera un PDF de ticket con un código QR personalizado.
      * Útil cuando se quiere usar un QR diferente al generado automáticamente.
      *
-     * @param ticketDTO Datos necesarios para generar el ticket
+     * @param ticketDTO     Datos necesarios para generar el ticket
      * @param imagenQRBytes Bytes de la imagen QR pre-generada
      * @return Array de bytes con el contenido del PDF
      * @throws Exception Si ocurre un error durante la generación

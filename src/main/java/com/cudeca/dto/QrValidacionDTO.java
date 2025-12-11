@@ -1,4 +1,4 @@
-package com.cudeca.model.dto;
+package com.cudeca.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,5 +27,3 @@ public class QrValidacionDTO {
      */
     private String dispositivoId;
 }
-
-

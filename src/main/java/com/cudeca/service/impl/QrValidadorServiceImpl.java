@@ -1,7 +1,7 @@
 package com.cudeca.service.impl;
 
-import com.cudeca.model.dto.QrValidacionDTO;
-import com.cudeca.model.dto.QrValidacionResponseDTO;
+import com.cudeca.dto.QrValidacionDTO;
+import com.cudeca.dto.QrValidacionResponseDTO;
 import com.cudeca.model.enums.EstadoEntrada;
 import com.cudeca.model.negocio.EntradaEmitida;
 import com.cudeca.model.negocio.ValidacionEntrada;
@@ -17,7 +17,7 @@ import java.util.Optional;
 
 /**
  * Implementación del servicio de validación de códigos QR.
- *
+ * <p>
  * Gestiona:
  * 1. Búsqueda de entradas por código QR
  * 2. Validación del estado de la entrada
@@ -35,7 +35,7 @@ public class QrValidadorServiceImpl implements QrValidadorService {
 
     /**
      * Valida una entrada por su código QR y cambia su estado de VALIDA a USADA.
-     *
+     * <p>
      * Casos de respuesta:
      * - "OK": Entrada validada exitosamente (cambió de VALIDA a USADA)
      * - "ERROR_NO_ENCONTRADO": No existe entrada con ese código QR

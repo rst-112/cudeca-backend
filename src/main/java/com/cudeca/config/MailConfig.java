@@ -1,21 +1,20 @@
 package com.cudeca.config;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.mail.MailProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
-import org.springframework.boot.autoconfigure.mail.MailProperties;
 
 import java.util.Properties;
 
 /**
  * Configuración de JavaMailSender para Spring Boot.
- *
+ * <p>
  * Spring Boot configura automáticamente JavaMailSender basado en la configuración
  * en application.yml. Esta clase proporciona configuración adicional si es necesaria.
- *
+ * <p>
  * Propiedades configurables en application.yml:
  * - spring.mail.host: Host del servidor SMTP
  * - spring.mail.port: Puerto del servidor SMTP
@@ -26,11 +25,26 @@ import java.util.Properties;
  * - spring.mail.properties.mail.smtp.starttls.enable: Habilitar STARTTLS
  */
 @Configuration
-@RequiredArgsConstructor
 @Profile("!test")
 public class MailConfig {
 
     private final MailProperties mailProperties;
+
+    // Constructor defensivo para evitar exposición de representación interna
+    public MailConfig(MailProperties mailProperties) {
+        // Crear una nueva instancia para evitar mutación externa
+        this.mailProperties = new MailProperties();
+        if (mailProperties != null) {
+            this.mailProperties.setHost(mailProperties.getHost());
+            this.mailProperties.setPort(mailProperties.getPort());
+            this.mailProperties.setUsername(mailProperties.getUsername());
+            this.mailProperties.setPassword(mailProperties.getPassword());
+            this.mailProperties.setDefaultEncoding(mailProperties.getDefaultEncoding());
+            if (mailProperties.getProperties() != null) {
+                this.mailProperties.getProperties().putAll(mailProperties.getProperties());
+            }
+        }
+    }
 
     /**
      * Configura el JavaMailSender de forma explícita.
@@ -80,4 +94,3 @@ public class MailConfig {
         return mailSender;
     }
 }
-

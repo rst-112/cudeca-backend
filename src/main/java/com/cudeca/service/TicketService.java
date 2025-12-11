@@ -1,6 +1,6 @@
 package com.cudeca.service;
 
-import com.cudeca.model.dto.TicketDTO;
+import com.cudeca.dto.TicketDTO;
 
 /**
  * Interfaz para la orquestación de la generación y envío de tickets.
@@ -10,7 +10,7 @@ public interface TicketService {
 
     /**
      * Genera un ticket (PDF con QR) y lo envía por correo electrónico al usuario.
-     *
+     * <p>
      * Proceso:
      * 1. Genera un código QR con el codigoQR del ticket
      * 2. Genera un PDF con la imagen QR incrustada

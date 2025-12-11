@@ -1,6 +1,6 @@
 package com.cudeca.service.impl;
 
-import com.cudeca.model.dto.TicketDTO;
+import com.cudeca.dto.TicketDTO;
 import com.cudeca.service.PdfService;
 import com.lowagie.text.*;
 import com.lowagie.text.pdf.PdfWriter;
@@ -12,7 +12,7 @@ import java.io.IOException;
 
 /**
  * Implementación de PdfService utilizando OpenPDF.
- *
+ * <p>
  * OpenPDF es la alternativa moderna y mantenida a iText 2.x.
  * Ofrece simplicidad, sin la complejidad de iText 7.x, pero con mayor mantenimiento que iText 2.x.
  * Excelente para generar PDFs sencillos y profesionales sin curva de aprendizaje pronunciada.
@@ -45,7 +45,7 @@ public class PdfServiceImpl implements PdfService {
 
     /**
      * Genera un PDF de ticket con un código QR personalizado incrustado.
-     *
+     * <p>
      * Estructura del PDF:
      * 1. Encabezado con logo/titulo CUDECA
      * 2. Información del evento (nombre, lugar, fecha)
@@ -53,7 +53,7 @@ public class PdfServiceImpl implements PdfService {
      * 4. Información del asiento (código, fila, columna, zona)
      * 5. Código QR (lado derecho)
      *
-     * @param ticketDTO Datos del ticket
+     * @param ticketDTO     Datos del ticket
      * @param imagenQRBytes Bytes de la imagen QR
      * @return Array de bytes con el PDF
      * @throws Exception Si ocurre un error
