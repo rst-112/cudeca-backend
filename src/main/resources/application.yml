@@ -13,6 +13,9 @@ application:
       secret-key: ${JWT_SECRET_KEY:rN8skz5ksunBA2xbiWLw7ir+wrBou6Zx8HppAlkJUh0=}
       expiration: 86400000 # 24 horas
 
+  mail:
+    sender: ${MAIL_SENDER:gruposapitos@gmail.com}
+
 ---
 # ==========================================
 # PERFIL DEV (Local - Docker)

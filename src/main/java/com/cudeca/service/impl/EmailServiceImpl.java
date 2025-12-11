@@ -17,6 +17,9 @@ public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
 
+    @org.springframework.beans.factory.annotation.Value("${application.mail.sender}")
+    private String senderEmail;
+
     @Override
     @Async
     public void sendTestEmail(String to) {
@@ -36,7 +39,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setTo(to);
             helper.setSubject(asunto);
             helper.setText(contenidoHtml, true);
-            helper.setFrom("noreply@cudeca.org"); // Asegurar que coincide con Brevo
+            helper.setFrom(senderEmail);
 
             mailSender.send(message);
             log.info("Correo enviado OK a: {}", to);
@@ -57,7 +60,7 @@ public class EmailServiceImpl implements EmailService {
             helper.setTo(to);
             helper.setSubject(asunto);
             helper.setText(contenidoHtml, true);
-            helper.setFrom("noreply@cudeca.org");
+            helper.setFrom(senderEmail);
 
             helper.addAttachment(nombreArchivoAdjunto, () -> new java.io.ByteArrayInputStream(pdfBytes));
 
@@ -72,7 +75,7 @@ public class EmailServiceImpl implements EmailService {
     private void enviarCorreoSimple(String to, String subject, String text) {
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom("noreply@cudeca.org");
+            message.setFrom(senderEmail);
             message.setTo(to);
             message.setSubject(subject);
             message.setText(text);
