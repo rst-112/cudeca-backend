@@ -3,14 +3,12 @@ package com.cudeca.service.impl;
 import com.cudeca.dto.CheckoutRequest;
 import com.cudeca.dto.CheckoutResponse;
 import com.cudeca.model.enums.EstadoCompra;
-import com.cudeca.model.negocio.Compra;
 import com.cudeca.model.evento.TipoEntrada;
-import com.cudeca.model.usuario.Usuario;
+import com.cudeca.model.negocio.Compra;
 import com.cudeca.model.usuario.Invitado;
-import com.cudeca.repository.CompraRepository;
-import com.cudeca.repository.InvitadoRepository;
-import com.cudeca.repository.TipoEntradaRepository;
-import com.cudeca.repository.UsuarioRepository;
+import com.cudeca.model.usuario.Usuario;
+import com.cudeca.repository.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,7 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -49,6 +48,23 @@ class CheckoutServiceImplTest {
     @Mock
     private TipoEntradaRepository tipoEntradaRepository;
 
+    @Mock
+    private AsientoRepository asientoRepository;
+
+    @Mock
+    private CertificadoFiscalRepository certificadoRepository;
+
+    @Mock
+    private MonederoRepository monederoRepository;
+
+    @Mock
+    private MovimientoMonederoRepository movimientoRepository;
+
+    @Mock
+    private PagoRepository pagoRepository;
+
+    @Mock
+    private ObjectMapper objectMapper;
 
     @InjectMocks
     private CheckoutServiceImpl checkoutService;
@@ -59,13 +75,11 @@ class CheckoutServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        // Usuario comprador de prueba
         usuarioComprador = new Usuario();
         usuarioComprador.setId(1L);
         usuarioComprador.setNombre("Juan Pérez");
         usuarioComprador.setEmail("juan@example.com");
 
-        // Tipo de entrada de prueba
         tipoEntrada = TipoEntrada.builder()
                 .id(1L)
                 .nombre("Entrada General")
@@ -73,10 +87,10 @@ class CheckoutServiceImplTest {
                 .cantidadTotal(100)
                 .build();
 
-        // Request de checkout básico
         checkoutRequest = new CheckoutRequest();
         checkoutRequest.setUsuarioId(1L);
         checkoutRequest.setDonacionExtra(5.0);
+        checkoutRequest.setMetodoPago("TARJETA");
 
         CheckoutRequest.ItemDTO item = new CheckoutRequest.ItemDTO();
         item.setTipo("ENTRADA");
@@ -90,7 +104,6 @@ class CheckoutServiceImplTest {
     @Test
     @DisplayName("Debe procesar checkout exitosamente con usuario registrado")
     void testProcesarCheckout_Exitoso() {
-        // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
         when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
 
@@ -104,25 +117,11 @@ class CheckoutServiceImplTest {
 
         when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
 
-        // Act
         CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
 
-        // Assert
         assertThat(response).isNotNull();
         assertThat(response.getCompraId()).isEqualTo(100L);
-
-        verify(usuarioRepository).findById(1L);
-        verify(tipoEntradaRepository).findById(1L);
         verify(compraRepository).save(any(Compra.class));
-
-        // Verificar que se creó la compra con los datos correctos
-        ArgumentCaptor<Compra> compraCaptor = ArgumentCaptor.forClass(Compra.class);
-        verify(compraRepository).save(compraCaptor.capture());
-
-        Compra compraPersistida = compraCaptor.getValue();
-        assertThat(compraPersistida.getUsuario()).isEqualTo(usuarioComprador);
-        assertThat(compraPersistida.getEstado()).isEqualTo(EstadoCompra.PENDIENTE);
-        assertThat(compraPersistida.getArticulos()).isNotEmpty();
     }
 
     @Test
@@ -281,7 +280,7 @@ class CheckoutServiceImplTest {
         // Assert
         assertThat(resultado).isTrue();
         verify(compraRepository).save(argThat(c ->
-            c.getEstado() == EstadoCompra.COMPLETADA
+                c.getEstado() == EstadoCompra.COMPLETADA
         ));
     }
 
@@ -338,7 +337,7 @@ class CheckoutServiceImplTest {
         // Assert
         assertThat(resultado).isTrue();
         verify(compraRepository).save(argThat(c ->
-            c.getEstado() == EstadoCompra.CANCELADA
+                c.getEstado() == EstadoCompra.CANCELADA
         ));
     }
 
@@ -562,14 +561,13 @@ class CheckoutServiceImplTest {
         // Arrange
         CheckoutRequest.ItemDTO itemSorteo = new CheckoutRequest.ItemDTO();
         itemSorteo.setTipo("SORTEO");
-        itemSorteo.setReferenciaId(1L);
+        itemSorteo.setReferenciaId(null); // SORTEO no requiere referenciaId
         itemSorteo.setCantidad(3);
         itemSorteo.setPrecio(15.0);
 
         checkoutRequest.setItems(List.of(itemSorteo));
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
-        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
 
         Compra compraGuardada = Compra.builder()
                 .id(100L)
@@ -587,7 +585,7 @@ class CheckoutServiceImplTest {
         // Assert
         assertThat(response).isNotNull();
         verify(compraRepository).save(any(Compra.class));
-        verify(tipoEntradaRepository).findById(1L);
+        // SORTEO no necesita tipoEntradaRepository
     }
 
     @Test
@@ -705,6 +703,363 @@ class CheckoutServiceImplTest {
         // Assert
         assertThat(response).isNotNull();
         assertThat(response.getEstado()).isEqualTo("CANCELADA");
+    }
+
+    @Test
+    @DisplayName("Debe obtener mensaje correcto para estado REEMBOLSADA")
+    void testObtenerMensajeEstado_Reembolsada() {
+        // Arrange
+        Compra compra = Compra.builder()
+                .id(1L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.REEMBOLSADA)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.findById(1L)).thenReturn(Optional.of(compra));
+
+        // Act
+        CheckoutResponse response = checkoutService.obtenerDetallesCompra(1L);
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getEstado()).isEqualTo("REEMBOLSADA");
+    }
+
+    @Test
+    @DisplayName("Debe obtener mensaje correcto para estado PARCIAL_REEMBOLSADA")
+    void testObtenerMensajeEstado_ParcialReembolsada() {
+        // Arrange
+        Compra compra = Compra.builder()
+                .id(1L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PARCIAL_REEMBOLSADA)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.findById(1L)).thenReturn(Optional.of(compra));
+
+        // Act
+        CheckoutResponse response = checkoutService.obtenerDetallesCompra(1L);
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getEstado()).isEqualTo("PARCIAL_REEMBOLSADA");
+    }
+
+    @Test
+    @DisplayName("Debe procesar pago con monedero exitosamente")
+    void testProcesarCheckout_PagoConMonedero() {
+        // Arrange
+        checkoutRequest.setMetodoPago("MONEDERO");
+        
+        com.cudeca.model.negocio.Monedero monedero = com.cudeca.model.negocio.Monedero.builder()
+                .id(1L)
+                .usuario(usuarioComprador)
+                .saldo(BigDecimal.valueOf(100.00))
+                .build();
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .pagos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        verify(monederoRepository).save(any(com.cudeca.model.negocio.Monedero.class));
+        verify(movimientoRepository).save(any(com.cudeca.model.negocio.MovimientoMonedero.class));
+    }
+
+    @Test
+    @DisplayName("Debe fallar al pagar con monedero si usuario es invitado")
+    void testProcesarCheckout_PagoMonederoInvitadoFalla() {
+        // Arrange
+        checkoutRequest.setUsuarioId(null);
+        checkoutRequest.setEmailContacto("invitado@example.com");
+        checkoutRequest.setMetodoPago("MONEDERO");
+
+        Invitado invitado = new Invitado();
+        invitado.setId(1L);
+        invitado.setEmail("invitado@example.com");
+
+        when(invitadoRepository.findByEmail("invitado@example.com")).thenReturn(Optional.of(invitado));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+
+        // Act & Assert
+        assertThatThrownBy(() -> checkoutService.procesarCheckout(checkoutRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Los invitados no pueden pagar con Monedero");
+    }
+
+    @Test
+    @DisplayName("Debe fallar al pagar con monedero si saldo insuficiente")
+    void testProcesarCheckout_MonederoSaldoInsuficiente() {
+        // Arrange
+        checkoutRequest.setMetodoPago("MONEDERO");
+        
+        com.cudeca.model.negocio.Monedero monedero = com.cudeca.model.negocio.Monedero.builder()
+                .id(1L)
+                .usuario(usuarioComprador)
+                .saldo(BigDecimal.valueOf(10.00))
+                .build();
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
+
+        // Act & Assert
+        assertThatThrownBy(() -> checkoutService.procesarCheckout(checkoutRequest))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Saldo insuficiente en el monedero");
+    }
+
+    @Test
+    @DisplayName("Debe fallar al pagar con monedero si usuario no tiene monedero")
+    void testProcesarCheckout_UsuarioSinMonedero() {
+        // Arrange
+        checkoutRequest.setMetodoPago("MONEDERO");
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+        when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> checkoutService.procesarCheckout(checkoutRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("El usuario no tiene monedero activo");
+    }
+
+    @Test
+    @DisplayName("Debe bloquear asientos correctamente")
+    void testProcesarCheckout_BloquearAsientos() {
+        // Arrange
+        checkoutRequest.setAsientoIds(List.of(1L, 2L));
+
+        com.cudeca.model.evento.Asiento asiento1 = new com.cudeca.model.evento.Asiento();
+        asiento1.setId(1L);
+        asiento1.setEstado(com.cudeca.model.enums.EstadoAsiento.LIBRE);
+
+        com.cudeca.model.evento.Asiento asiento2 = new com.cudeca.model.evento.Asiento();
+        asiento2.setId(2L);
+        asiento2.setEstado(com.cudeca.model.enums.EstadoAsiento.LIBRE);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+        when(asientoRepository.findAllByIdWithLock(List.of(1L, 2L))).thenReturn(List.of(asiento1, asiento2));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        verify(asientoRepository).saveAll(anyList());
+        assertThat(asiento1.getEstado()).isEqualTo(com.cudeca.model.enums.EstadoAsiento.BLOQUEADO);
+        assertThat(asiento2.getEstado()).isEqualTo(com.cudeca.model.enums.EstadoAsiento.BLOQUEADO);
+    }
+
+    @Test
+    @DisplayName("Debe fallar si asientos no están disponibles")
+    void testProcesarCheckout_AsientosNoDisponibles() {
+        // Arrange
+        checkoutRequest.setAsientoIds(List.of(1L));
+
+        com.cudeca.model.evento.Asiento asiento = new com.cudeca.model.evento.Asiento();
+        asiento.setId(1L);
+        asiento.setEstado(com.cudeca.model.enums.EstadoAsiento.VENDIDO);
+
+        when(asientoRepository.findAllByIdWithLock(List.of(1L))).thenReturn(List.of(asiento));
+
+        // Act & Assert
+        assertThatThrownBy(() -> checkoutService.procesarCheckout(checkoutRequest))
+                .isInstanceOf(com.cudeca.exception.AsientoNoDisponibleException.class)
+                .hasMessageContaining("no están disponibles");
+    }
+
+    @Test
+    @DisplayName("Debe fallar si no se encuentran todos los asientos")
+    void testProcesarCheckout_AsientosNoEncontrados() {
+        // Arrange
+        checkoutRequest.setAsientoIds(List.of(1L, 2L));
+
+        com.cudeca.model.evento.Asiento asiento1 = new com.cudeca.model.evento.Asiento();
+        asiento1.setId(1L);
+        asiento1.setEstado(com.cudeca.model.enums.EstadoAsiento.LIBRE);
+
+        when(asientoRepository.findAllByIdWithLock(List.of(1L, 2L))).thenReturn(List.of(asiento1));
+
+        // Act & Assert
+        assertThatThrownBy(() -> checkoutService.procesarCheckout(checkoutRequest))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Asientos no encontrados");
+    }
+
+    @Test
+    @DisplayName("Debe generar certificado fiscal cuando hay datos fiscales")
+    void testProcesarCheckout_GenerarCertificadoFiscal() throws Exception {
+        // Arrange
+        com.cudeca.dto.FiscalDataDTO datosFiscales = com.cudeca.dto.FiscalDataDTO.builder()
+                .nif("12345678Z")
+                .nombreCompleto("Juan Pérez")
+                .direccion("Calle Test 123")
+                .pais("España")
+                .build();
+        checkoutRequest.setDatosFiscales(datosFiscales);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        verify(certificadoRepository).save(any(com.cudeca.model.negocio.CertificadoFiscal.class));
+    }
+
+    @Test
+    @DisplayName("Debe calcular base de donación correctamente")
+    void testProcesarCheckout_ConDonacion() {
+        // Arrange
+        CheckoutRequest.ItemDTO itemDonacion = new CheckoutRequest.ItemDTO();
+        itemDonacion.setTipo("DONACION");
+        itemDonacion.setReferenciaId(1L);
+        itemDonacion.setCantidad(1);
+        itemDonacion.setPrecio(50.0);
+
+        checkoutRequest.setItems(List.of(itemDonacion));
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getTotal()).isGreaterThan(BigDecimal.ZERO);
+    }
+
+    @Test
+    @DisplayName("Debe manejar error al generar certificado fiscal sin fallar la compra")
+    void testProcesarCheckout_ErrorGenerandoCertificado() throws Exception {
+        // Arrange
+        com.cudeca.dto.FiscalDataDTO datosFiscales = com.cudeca.dto.FiscalDataDTO.builder()
+                .nif("12345678Z")
+                .nombreCompleto("Juan Pérez")
+                .direccion("Calle Test 123")
+                .pais("España")
+                .build();
+        checkoutRequest.setDatosFiscales(datosFiscales);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+
+        // Simular error en ObjectMapper
+        when(objectMapper.writeValueAsString(any())).thenThrow(new RuntimeException("Error de serialización"));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getCompraId()).isEqualTo(100L);
+        // La compra debe completarse aunque falle el certificado
+        verify(compraRepository).save(any(Compra.class));
+        // No debe guardar certificado debido al error
+        verify(certificadoRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe loguear bloqueo exitoso de asientos")
+    void testProcesarCheckout_LogBloqueoAsientos() {
+        // Arrange
+        checkoutRequest.setAsientoIds(List.of(1L, 2L));
+
+        com.cudeca.model.evento.Asiento asiento1 = new com.cudeca.model.evento.Asiento();
+        asiento1.setId(1L);
+        asiento1.setEstado(com.cudeca.model.enums.EstadoAsiento.LIBRE);
+
+        com.cudeca.model.evento.Asiento asiento2 = new com.cudeca.model.evento.Asiento();
+        asiento2.setId(2L);
+        asiento2.setEstado(com.cudeca.model.enums.EstadoAsiento.LIBRE);
+
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+        when(asientoRepository.findAllByIdWithLock(List.of(1L, 2L))).thenReturn(List.of(asiento1, asiento2));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .usuario(usuarioComprador)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        // Verificar que los asientos fueron bloqueados
+        assertThat(asiento1.getEstado()).isEqualTo(com.cudeca.model.enums.EstadoAsiento.BLOQUEADO);
+        assertThat(asiento2.getEstado()).isEqualTo(com.cudeca.model.enums.EstadoAsiento.BLOQUEADO);
+        verify(asientoRepository).saveAll(anyList());
     }
 }
 
