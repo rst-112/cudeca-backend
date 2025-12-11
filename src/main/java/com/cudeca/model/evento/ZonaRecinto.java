@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +35,10 @@ public class ZonaRecinto {
     @NotNull(message = "El aforo total es obligatorio")
     @Positive(message = "El aforo total debe ser positivo")
     private Integer aforoTotal;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "objetos_decorativos")
+    private String objetosDecorativos;
 
     // --- RELACIONES ---
 

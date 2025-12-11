@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
@@ -17,7 +18,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.Mockito.mock;
@@ -25,14 +25,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest
+@WebMvcTest(controllers = {}, properties = {"spring.main.allow-bean-definition-overriding=true"})
 @Import({SecurityConfig.class, JwtAuthFilter.class, SecurityConfigTest.TestConfig.class})
 class SecurityConfigTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    // Configuración de beans falsos para que SecurityConfig arranque
+    @MockitoBean
+    private com.cudeca.controller.EventoController eventoController; // Mockeamos el controlador para que no interfiera
+
     @TestConfiguration
     static class TestConfig {
         @Bean
@@ -99,29 +101,23 @@ class SecurityConfigTest {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
+                // Esperamos 400 porque el cuerpo está vacío, pero no 401/403, lo que prueba que es público
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("Privado: /api/eventos debe estar protegido")
-    void protectedRouteShouldBeBlocked() throws Exception {
+    @DisplayName("Público: GET /api/eventos debe ser accesible sin autenticación")
+    void getEventosShouldBePublic() throws Exception {
         mockMvc.perform(get("/api/eventos"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test
-    @WithMockUser
-    @DisplayName("Privado con Auth: /api/eventos no debe ser bloqueado por seguridad")
-    void protectedRouteAllowedWithAuth() throws Exception {
-        // Con autenticación, la seguridad permite el acceso.
-        // El recurso no existe, así que puede ser 404 o 500 (según GlobalExceptionHandler),
-        // pero lo importante es que NO sea 401 (Unauthorized) ni 403 (Forbidden).
-        mockMvc.perform(get("/api/eventos"))
-                .andExpect(result -> {
-                    int status = result.getResponse().getStatus();
-                    if (status == 401 || status == 403) {
-                        throw new AssertionError("Se esperaba acceso permitido pero se recibió: " + status);
-                    }
-                });
+    @DisplayName("Privado: POST /api/eventos debe estar protegido")
+    void postEventosShouldBeProtected() throws Exception {
+        mockMvc.perform(post("/api/eventos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden()); // o isUnauthorized(), dependiendo de la configuración exacta
     }
 }

@@ -406,5 +406,122 @@ class DatosFiscalesServiceImplTest {
         // Act & Assert - Verificamos que acepta diferentes formatos según el país
         assertThat(datosFiscales.getPais()).isEqualTo("Portugal");
     }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al crear datos fiscales nulos")
+    void testCrearDatosFiscales_DatosNulos() {
+        // Act & Assert
+        assertThatThrownBy(() ->
+            datosFiscalesService.crearDatosFiscales(null, 1L)
+        )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Los datos fiscales no pueden ser nulos");
+
+        verify(datosFiscalesRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al crear datos sin NIF")
+    void testCrearDatosFiscales_SinNIF() {
+        // Arrange
+        datosFiscales.setNif(null);
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+            datosFiscalesService.crearDatosFiscales(datosFiscales, 1L)
+        )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("El NIF es obligatorio");
+
+        verify(datosFiscalesRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al crear datos con NIF vacío")
+    void testCrearDatosFiscales_NIFVacio() {
+        // Arrange
+        datosFiscales.setNif("   ");
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+            datosFiscalesService.crearDatosFiscales(datosFiscales, 1L)
+        )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("El NIF es obligatorio");
+
+        verify(datosFiscalesRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al crear datos sin dirección")
+    void testCrearDatosFiscales_SinDireccion() {
+        // Arrange
+        datosFiscales.setDireccion(null);
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+            datosFiscalesService.crearDatosFiscales(datosFiscales, 1L)
+        )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("La dirección es obligatoria");
+
+        verify(datosFiscalesRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al crear datos con dirección vacía")
+    void testCrearDatosFiscales_DireccionVacia() {
+        // Arrange
+        datosFiscales.setDireccion("   ");
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+            datosFiscalesService.crearDatosFiscales(datosFiscales, 1L)
+        )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("La dirección es obligatoria");
+
+        verify(datosFiscalesRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al crear datos sin país")
+    void testCrearDatosFiscales_SinPais() {
+        // Arrange
+        datosFiscales.setPais(null);
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+            datosFiscalesService.crearDatosFiscales(datosFiscales, 1L)
+        )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("El país es obligatorio");
+
+        verify(datosFiscalesRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al crear datos con país vacío")
+    void testCrearDatosFiscales_PaisVacio() {
+        // Arrange
+        datosFiscales.setPais("   ");
+
+        // Act & Assert
+        assertThatThrownBy(() ->
+            datosFiscalesService.crearDatosFiscales(datosFiscales, 1L)
+        )
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("El país es obligatorio");
+
+        verify(datosFiscalesRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe manejar error en validación de letra de control")
+    void testValidarNIF_ErrorEnParsing() {
+        // Act & Assert
+        // Un NIF con letras donde debería haber números causará un NumberFormatException
+        assertThat(datosFiscalesService.validarNIF("ABCDEFGHZ")).isFalse();
+    }
 }
 
