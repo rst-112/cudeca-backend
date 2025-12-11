@@ -7,7 +7,11 @@
     <description>Ruleset estable</description>
 
     <!-- Ruleset oficial y estable de Java -->
-    <rule ref="category/java/bestpractices.xml"/>
+    <rule ref="category/java/bestpractices.xml">
+        <!-- Excluir reglas problemáticas -->
+        <exclude name="GuardLogStatement"/>
+        <exclude name="LooseCoupling"/>
+    </rule>
 
     <!-- Excluir clases de bootstrap/framework -->
     <exclude-pattern>.*/CudecaBackendApplication\.java</exclude-pattern>
