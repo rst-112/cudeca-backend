@@ -4,6 +4,7 @@ import com.cudeca.dto.usuario.AuthResponse;
 import com.cudeca.dto.usuario.LoginRequest;
 import com.cudeca.dto.usuario.RegisterRequest;
 import com.cudeca.dto.usuario.UserResponse;
+import com.cudeca.model.negocio.Monedero;
 import com.cudeca.model.usuario.Rol;
 import com.cudeca.model.usuario.Usuario;
 import com.cudeca.repository.RolRepository;
@@ -55,7 +56,14 @@ public class AuthServiceImpl implements AuthService {
                 .roles(new HashSet<>(Collections.singletonList(rolDefault))) // Asignamos el objeto Rol encontrado
                 .build();
 
-        // 4. Guardar y generar token
+        // 4. Crear y asociar monedero
+        Monedero nuevoMonedero = Monedero.builder()
+                .usuario(nuevoUsuario)
+                .build();
+        nuevoUsuario.setMonedero(nuevoMonedero);
+
+
+        // 5. Guardar y generar token
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
         String jwtToken = jwtService.generateToken(usuarioGuardado);
 
@@ -86,6 +94,7 @@ public class AuthServiceImpl implements AuthService {
                                 .map(Rol::getNombre)
                                 .collect(Collectors.joining(",")))
                         .build())
+                .isAdmin(user.esAdmin())
                 .build();
     }
 }
