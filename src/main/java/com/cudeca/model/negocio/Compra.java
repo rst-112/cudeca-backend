@@ -48,7 +48,8 @@ public class Compra {
     private OffsetDateTime fecha;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "estado_compra")
+    @org.hibernate.annotations.JdbcType(org.hibernate.dialect.PostgreSQLEnumJdbcType.class)
     @NotNull(message = "El estado es obligatorio")
     @Builder.Default
     private EstadoCompra estado = EstadoCompra.PENDIENTE;
