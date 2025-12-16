@@ -64,6 +64,9 @@ class CheckoutServiceImplTest {
     private PagoRepository pagoRepository;
 
     @Mock
+    private DatosFiscalesRepository datosFiscalesRepository;
+
+    @Mock
     private ObjectMapper objectMapper;
 
     @InjectMocks
@@ -922,7 +925,7 @@ class CheckoutServiceImplTest {
     @DisplayName("Debe generar certificado fiscal cuando hay datos fiscales")
     void testProcesarCheckout_GenerarCertificadoFiscal() throws Exception {
         // Arrange
-        com.cudeca.dto.FiscalDataDTO datosFiscales = com.cudeca.dto.FiscalDataDTO.builder()
+        CheckoutRequest.FiscalDataDTO datosFiscales = CheckoutRequest.FiscalDataDTO.builder()
                 .nif("12345678Z")
                 .nombreCompleto("Juan Pérez")
                 .direccion("Calle Test 123")
@@ -930,8 +933,17 @@ class CheckoutServiceImplTest {
                 .build();
         checkoutRequest.setDatosFiscales(datosFiscales);
 
+        // Crear un DatosFiscales mockado que será retornado
+        com.cudeca.model.usuario.DatosFiscales datosFiscalesMock = new com.cudeca.model.usuario.DatosFiscales();
+        datosFiscalesMock.setId(1L);
+        datosFiscalesMock.setUsuario(usuarioComprador);
+        datosFiscalesMock.setNombreCompleto("Juan Pérez");
+        datosFiscalesMock.setNif("12345678Z");
+
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
         when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+        when(datosFiscalesRepository.findByUsuario_Id(1L)).thenReturn(List.of(datosFiscalesMock));
+        when(objectMapper.writeValueAsString(any())).thenReturn("{\"test\": \"data\"}");
 
         Compra compraGuardada = Compra.builder()
                 .id(100L)
@@ -987,7 +999,7 @@ class CheckoutServiceImplTest {
     @DisplayName("Debe manejar error al generar certificado fiscal sin fallar la compra")
     void testProcesarCheckout_ErrorGenerandoCertificado() throws Exception {
         // Arrange
-        com.cudeca.dto.FiscalDataDTO datosFiscales = com.cudeca.dto.FiscalDataDTO.builder()
+        CheckoutRequest.FiscalDataDTO datosFiscales = CheckoutRequest.FiscalDataDTO.builder()
                 .nif("12345678Z")
                 .nombreCompleto("Juan Pérez")
                 .direccion("Calle Test 123")
@@ -997,9 +1009,10 @@ class CheckoutServiceImplTest {
 
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioComprador));
         when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+        when(datosFiscalesRepository.findByUsuario_Id(1L)).thenReturn(new ArrayList<>());
 
-        // Simular error en ObjectMapper
-        when(objectMapper.writeValueAsString(any())).thenThrow(new RuntimeException("Error de serialización"));
+        // Simular error en ObjectMapper - usar lenient para evitar UnnecessaryStubbingException
+        lenient().when(objectMapper.writeValueAsString(any())).thenThrow(new RuntimeException("Error de serialización"));
 
         Compra compraGuardada = Compra.builder()
                 .id(100L)
