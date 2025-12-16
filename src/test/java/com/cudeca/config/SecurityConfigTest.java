@@ -1,8 +1,7 @@
 package com.cudeca.config;
 
-import com.cudeca.service.AuthService;
-import com.cudeca.service.EmailService;
-import com.cudeca.service.JwtService;
+import com.cudeca.service.*;
+import com.cudeca.repository.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +34,16 @@ class SecurityConfigTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private com.cudeca.controller.EventoController eventoController; // Mockeamos el controlador para que no interfiera
+    private com.cudeca.controller.EventoController eventoController;
+    
+    @MockitoBean
+    private EntradaEmitidaRepository entradaEmitidaRepository;
+    
+    @MockitoBean
+    private EventoRepository eventoRepository;
+    
+    @MockitoBean
+    private UsuarioRepository usuarioRepository;
 
     @TestConfiguration
     static class TestConfig {
@@ -55,6 +63,36 @@ class SecurityConfigTest {
         @Primary
         public EmailService emailService() {
             return mock(EmailService.class);
+        }
+
+        @Bean
+        @Primary
+        public CheckoutService checkoutService() {
+            return mock(CheckoutService.class);
+        }
+
+        @Bean
+        @Primary
+        public DatosFiscalesService datosFiscalesService() {
+            return mock(DatosFiscalesService.class);
+        }
+
+        @Bean
+        @Primary
+        public PerfilUsuarioService perfilUsuarioService() {
+            return mock(PerfilUsuarioService.class);
+        }
+
+        @Bean
+        @Primary
+        public QrValidadorService qrValidadorService() {
+            return mock(QrValidadorService.class);
+        }
+
+        @Bean
+        @Primary
+        public TicketService ticketService() {
+            return mock(TicketService.class);
         }
 
         @Bean

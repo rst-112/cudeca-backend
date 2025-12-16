@@ -13,8 +13,13 @@ application:
       secret-key: ${JWT_SECRET_KEY:rN8skz5ksunBA2xbiWLw7ir+wrBou6Zx8HppAlkJUh0=}
       expiration: 86400000 # 24 horas
 
----
+  mail:
+    sender: ${MAIL_SENDER:gruposapitos@gmail.com}
 
+---
+# ==========================================
+# PERFIL DEV (Local - Docker)
+# ==========================================
 spring:
   config:
     activate:
@@ -34,31 +39,47 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
+    open-in-view: false
 
   flyway:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
 
+  # Configuración de correo para MailHog (Local)
   mail:
     host: localhost
     port: 1025
+    username: ""
+    password: ""
+    default-encoding: UTF-8
     properties:
       mail:
         smtp:
           auth: false
           starttls.enable: false
+        mime:
+          charset: UTF-8
 
   springdoc:
     swagger-ui:
       enabled: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework: INFO
+    org.hibernate.SQL: DEBUG
+    com.cudeca: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
 
 server:
   port: ${SERVER_PORT:8080}
 
 ---
 # ==========================================
-# PERFIL PROD (Nube - Render/Neon)
+# PERFIL PROD (Nube - Render/Neon/Brevo)
 # ==========================================
 spring:
   config:
@@ -84,20 +105,28 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
+  # Configuración de correo para Brevo/SMTP (Nube)
   mail:
-    host: localhost
-    port: 1025
-    username: ""
-    password: ""
+    host: ${SPRING_MAIL_HOST:smtp-relay.brevo.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    default-encoding: UTF-8
     properties:
       mail:
         smtp:
-          auth: false
-          starttls.enable: false
+          auth: ${SPRING_MAIL_SMTP_AUTH:true}
+          starttls.enable: ${SPRING_MAIL_SMTP_STARTTLS_ENABLE:true}
+          starttls.required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+        mime:
+          charset: UTF-8
 
   springdoc:
     swagger-ui:
-      enabled: false
+      enabled: false # Swagger desactivado en producción por seguridad
 
 logging:
   file:
@@ -110,13 +139,6 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"
-
-application:
-  security:
-    jwt:
-      # En producción, esta clave DEBE ser establecida a través de la variable de entorno JWT_SECRET_KEY.
-      secret-key: ${JWT_SECRET_KEY:B4-CLAVE-SECRETA-SUPER-LARGA-Y-COMPLEJA-DE-SAPOSOFT}
-      expiration: 86400000 # 24 horas en milisegundos
 
 server:
   port: ${PORT:8080}
