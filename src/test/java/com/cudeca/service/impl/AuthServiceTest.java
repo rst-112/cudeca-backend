@@ -46,6 +46,10 @@ class AuthServiceTest {
     private AuthenticationManager authenticationManager;
     @Mock
     private Authentication authentication;
+    @Mock
+    private com.cudeca.repository.MonederoRepository monederoRepository;
+    @Mock
+    private com.cudeca.repository.InvitadoRepository invitadoRepository;
 
     @InjectMocks
     private AuthServiceImpl authService;
