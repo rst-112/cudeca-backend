@@ -1,6 +1,9 @@
 package com.cudeca.service.impl;
 
 import com.cudeca.dto.UserProfileDTO;
+import com.cudeca.model.negocio.ArticuloCompra;
+import com.cudeca.model.negocio.ArticuloEntrada;
+import com.cudeca.model.negocio.Compra;
 import com.cudeca.model.negocio.Monedero;
 import com.cudeca.model.usuario.Rol;
 import com.cudeca.model.usuario.Usuario;
@@ -13,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Optional;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 /**
  * Implementación del servicio de gestión de perfil de usuario.
@@ -129,6 +134,57 @@ public class PerfilUsuarioServiceImpl implements PerfilUsuarioService {
         dto.setSaldoMonedero(saldo);
 
         return dto;
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> obtenerHistorialCompras(Long usuarioId) {
+        log.debug("Generando historial de compras para usuario ID: {}", usuarioId);
+
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new IllegalArgumentException(USUARIO_NO_ENCONTRADO + usuarioId);
+        }
+
+        // 1. Buscamos las compras reales en BD
+        List<Compra> compras = compraRepository.findByUsuario_Id(usuarioId);
+
+        // 2. Las convertimos al formato que espera el Frontend
+        return compras.stream().map(compra -> {
+            Map<String, Object> dto = new HashMap<>();
+            dto.put("id", compra.getId().toString());
+
+            // Formatear fecha (ej: 15 de Noviembre, 2024)
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd 'de' MMMM, yyyy", new Locale("es", "ES"));
+            dto.put("date", compra.getFecha().atZoneSameInstant(ZoneId.systemDefault()).format(formatter));
+
+            dto.put("status", compra.getEstado().name()); // COMPLETADA, PENDIENTE...
+
+            // Calcular total
+            BigDecimal total = compra.getArticulos().stream()
+                    .map(a -> a.getPrecioUnitario().multiply(new BigDecimal(a.getCantidad())))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            dto.put("total", total + "€");
+
+            // Buscar nombre del evento y contar entradas
+            String titulo = "Compra General";
+            int numEntradas = 0;
+
+            for (ArticuloCompra art : compra.getArticulos()) {
+                if (art instanceof ArticuloEntrada) {
+                    ArticuloEntrada ent = (ArticuloEntrada) art;
+                    numEntradas += ent.getCantidad();
+                    // Cogemos el nombre del primer evento que encontremos
+                    if (ent.getTipoEntrada() != null && ent.getTipoEntrada().getEvento() != null) {
+                        titulo = ent.getTipoEntrada().getEvento().getNombre();
+                    }
+                }
+            }
+
+            dto.put("title", titulo);
+            dto.put("tickets", numEntradas + " entradas");
+
+            return dto;
+        }).toList();
     }
 
     @Override

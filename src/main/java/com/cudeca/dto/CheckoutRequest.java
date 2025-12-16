@@ -2,7 +2,10 @@ package com.cudeca.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -49,5 +52,24 @@ public class CheckoutRequest {
         @NotNull(message = "El precio unitario es obligatorio")
         @PositiveOrZero(message = "El precio no puede ser negativo")
         private Double precio;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class FiscalDataDTO {
+        @NotBlank(message = "El nombre o razón social es obligatorio para la factura")
+        private String nombreCompleto;
+
+        @NotBlank(message = "El NIF/CIF es obligatorio")
+        @Pattern(regexp = "^[0-9A-Z]{1,20}$", message = "El NIF contiene caracteres inválidos")
+        private String nif;
+
+        @NotBlank(message = "La dirección fiscal es obligatoria")
+        private String direccion;
+
+        @NotBlank(message = "El país es obligatorio")
+        private String pais;
     }
 }

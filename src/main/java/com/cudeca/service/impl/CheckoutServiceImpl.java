@@ -8,6 +8,7 @@ import com.cudeca.model.enums.*;
 import com.cudeca.model.evento.Asiento;
 import com.cudeca.model.evento.TipoEntrada;
 import com.cudeca.model.negocio.*;
+import com.cudeca.model.usuario.DatosFiscales;
 import com.cudeca.model.usuario.Invitado;
 import com.cudeca.model.usuario.Usuario;
 import com.cudeca.repository.*;
@@ -53,6 +54,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final MovimientoMonederoRepository movimientoRepository;
     private final PagoRepository pagoRepository;
     private final EntradaEmitidaRepository entradaEmitidaRepository; // Variable de instancia
+    private final DatosFiscalesRepository datosFiscalesRepository;
 
     // --- SERVICIOS Y UTILIDADES ---
     private final ObjectMapper objectMapper;
@@ -216,8 +218,42 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     private void generarCertificadoFiscal(Compra compra, CheckoutRequest request) {
         try {
+            // Validar que los datos fiscales no sean nulos
+            if (request.getDatosFiscales() == null) {
+                log.warn("Los datos fiscales son nulos para la compra ID: {}", compra.getId());
+                return;
+            }
+
+            // Validar que los campos requeridos estén presentes
+            if (request.getDatosFiscales().getNombreCompleto() == null ||
+                request.getDatosFiscales().getNombreCompleto().isBlank()) {
+                log.warn("El nombre completo en datos fiscales es nulo o vacío para la compra ID: {}", compra.getId());
+                return;
+            }
+
+            // Obtener o crear los datos fiscales del usuario
+            DatosFiscales datosFiscales = null;
+
+            if (compra.getUsuario() != null) {
+                // Si es un usuario registrado, buscar sus datos fiscales
+                List<DatosFiscales> existentes = datosFiscalesRepository.findByUsuario_Id(compra.getUsuario().getId());
+                datosFiscales = existentes.isEmpty()
+                        ? crearDatosFiscales(compra.getUsuario(), request.getDatosFiscales())
+                        : existentes.get(0);
+            } else if (compra.getInvitado() != null) {
+                // Si es un invitado, crear datos fiscales temporales
+                datosFiscales = crearDatosFiscalesParaInvitado(request.getDatosFiscales());
+            }
+
+            if (datosFiscales == null) {
+                log.warn("No se pudieron obtener/crear datos fiscales para la compra ID: {}", compra.getId());
+                return;
+            }
+
             CertificadoFiscal certificado = new CertificadoFiscal();
             certificado.setCompra(compra);
+            certificado.setDatosFiscales(datosFiscales); // ASIGNACIÓN CRÍTICA
+
             // Snapshot JSON
             String snapshot = objectMapper.writeValueAsString(request.getDatosFiscales());
             certificado.setDatosSnapshotJson(snapshot);
@@ -227,9 +263,52 @@ public class CheckoutServiceImpl implements CheckoutService {
             certificado.setNumeroSerie("CERT-" + System.currentTimeMillis());
 
             certificadoRepository.save(certificado);
+            log.info("Certificado fiscal generado para compra ID: {}", compra.getId());
         } catch (Exception e) {
-            log.error("Error generando certificado fiscal", e);
+            log.error("Error generando certificado fiscal para compra ID: {}", compra.getId(), e);
         }
+    }
+
+    private DatosFiscales crearDatosFiscales(Usuario usuario, CheckoutRequest.FiscalDataDTO dto) {
+        // Validaciones defensivas
+        String nombreCompleto = dto.getNombreCompleto() != null ? dto.getNombreCompleto().trim() : usuario.getNombre();
+        String nif = dto.getNif() != null ? dto.getNif().trim() : "";
+        String direccion = dto.getDireccion() != null ? dto.getDireccion().trim() : "";
+        String pais = dto.getPais() != null ? dto.getPais().trim() : "";
+
+        if (nombreCompleto.isBlank()) {
+            nombreCompleto = usuario.getNombre();
+        }
+
+        DatosFiscales datosFiscales = DatosFiscales.builder()
+                .usuario(usuario)
+                .nombreCompleto(nombreCompleto)
+                .nif(nif)
+                .direccion(direccion)
+                .pais(pais)
+                .build();
+        return datosFiscalesRepository.save(datosFiscales);
+    }
+
+    private DatosFiscales crearDatosFiscalesParaInvitado(CheckoutRequest.FiscalDataDTO dto) {
+        // Validaciones defensivas para invitados
+        String nombreCompleto = dto.getNombreCompleto() != null ? dto.getNombreCompleto().trim() : "Invitado";
+        String nif = dto.getNif() != null ? dto.getNif().trim() : "";
+        String direccion = dto.getDireccion() != null ? dto.getDireccion().trim() : "";
+        String pais = dto.getPais() != null ? dto.getPais().trim() : "";
+
+        if (nombreCompleto.isBlank()) {
+            nombreCompleto = "Invitado";
+        }
+
+        DatosFiscales datosFiscales = DatosFiscales.builder()
+                .usuario(null) // Sin usuario asociado
+                .nombreCompleto(nombreCompleto)
+                .nif(nif)
+                .direccion(direccion)
+                .pais(pais)
+                .build();
+        return datosFiscalesRepository.save(datosFiscales);
     }
 
     private BigDecimal calcularBaseDonacion(Compra compra) {

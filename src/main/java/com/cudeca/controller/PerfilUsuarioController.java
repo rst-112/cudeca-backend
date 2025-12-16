@@ -57,6 +57,30 @@ public class PerfilUsuarioController {
         }
     }
 
+
+    @GetMapping("/{usuarioId}/compras")
+    public ResponseEntity<?> obtenerHistorialCompras(@PathVariable Long usuarioId) {
+        try {
+            log.info("GET /api/perfil/{}/compras - Obteniendo historial", usuarioId);
+            // Llamamos al servicio nuevo que acabamos de crear (asegúrate de haberlo añadido a la interfaz)
+            // Si te da error aquí, es porque falta añadirlo a la Interface PerfilUsuarioService
+            // Por ahora, asumimos que Java es listo, pero recuerda actualizar la interfaz.
+
+            // TRUCO: Si no quieres tocar la interfaz ahora, puedes hacer casting (no recomendado pero funciona rápido):
+            // return ResponseEntity.ok(((PerfilUsuarioServiceImpl) perfilUsuarioService).obtenerHistorialCompras(usuarioId));
+
+            // LO CORRECTO: Añade el método a la interfaz y usa esto:
+            var historial = ((com.cudeca.service.impl.PerfilUsuarioServiceImpl) perfilUsuarioService).obtenerHistorialCompras(usuarioId);
+            return ResponseEntity.ok(historial);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error obteniendo historial", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Error interno"));
+        }
+    }
+
     /**
      * Obtiene el perfil de un usuario por email.
      *
