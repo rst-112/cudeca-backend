@@ -9,14 +9,18 @@ import com.cudeca.model.negocio.Monedero;
 import com.cudeca.model.usuario.Invitado;
 import com.cudeca.model.usuario.Rol;
 import com.cudeca.model.usuario.Usuario;
+import com.cudeca.model.usuario.VerificacionCuenta;
 import com.cudeca.repository.*;
 import com.cudeca.service.AuthService;
+import com.cudeca.service.EmailService;
 import com.cudeca.service.JwtService;
 import com.cudeca.service.impl.ServiceExceptions.EmailAlreadyExistsException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -24,10 +28,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.time.OffsetDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -44,11 +46,14 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-
-    // --- NUEVAS DEPENDENCIAS PARA MONEDERO Y FUSIÓN DE CUENTAS ---
     private final MonederoRepository monederoRepository;
     private final InvitadoRepository invitadoRepository;
     private final CompraRepository compraRepository;
+    private final VerificacionCuentaRepository verificacionRepository;
+    private final EmailService emailService;
+
+    @Value("${application.frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
     @Override
     @Transactional
@@ -159,5 +164,81 @@ public class AuthServiceImpl implements AuthService {
                                 .collect(Collectors.joining(",")))
                         .build())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void solicitarRecuperacionPassword(String email) {
+        // Por seguridad, no lanzamos error si el usuario no existe para evitar enumeración
+        usuarioRepository.findByEmail(email).ifPresent(usuario -> {
+
+            // 1. Invalidar tokens anteriores pendientes
+            verificacionRepository.anularTokensPrevios(usuario.getId());
+
+            // 2. Generar token
+            String token = UUID.randomUUID().toString();
+
+            // 3. Guardar verificación
+            VerificacionCuenta verificacion = VerificacionCuenta.builder()
+                    .usuario(usuario)
+                    .email(email)
+                    .token(token)
+                    .expiraEn(OffsetDateTime.now().plusHours(1))
+                    .usado(false)
+                    .build();
+
+            verificacionRepository.save(verificacion);
+
+            // 4. Enviar Email
+            String htmlContent = getContent(usuario, token);
+
+            emailService.enviarCorreoHtml(email, "Restablecer Contraseña - CUDECA", htmlContent);
+            log.info("Email de recuperación enviado a: {}", email);
+        });
+    }
+
+    private @NonNull String getContent(Usuario usuario, String token) {
+        String link = frontendUrl + "/reset-password?token=" + token;
+        return String.format(
+                "<div style=\"font-family: Arial, sans-serif; color: #333;\">%n" +
+                    "<h2 style=\"color: #00A651;\">Recuperación de Contraseña</h2>%n" +
+                    "<p>Hola %s,</p>%n" +
+                    "<p>Hemos recibido una solicitud para restablecer tu contraseña en CUDECA.</p>%n" +
+                    "<p>Haz clic en el siguiente botón para crear una nueva contraseña:</p>%n" +
+                    "<a href=\"%s\" style=\"background-color: #00A651; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;\">Restablecer Contraseña</a>%n" +
+                    "<p style=\"font-size: 12px; color: #666;\">Este enlace expirará en 1 hora. Si no has solicitado esto, puedes ignorar este correo.</p>%n" +
+                "</div>", 
+                usuario.getNombre(), link);
+    }
+
+    @Override
+    @Transactional
+    public void restablecerPassword(String token, String nuevaPassword) {
+        // 1. Buscar y Validar Token
+        VerificacionCuenta verificacion = verificacionRepository.findByToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("El enlace de recuperación no es válido."));
+
+        if (verificacion.isUsado()) {
+            throw new IllegalArgumentException("Este enlace ya ha sido utilizado.");
+        }
+
+        if (verificacion.getExpiraEn().isBefore(OffsetDateTime.now())) {
+            throw new IllegalArgumentException("El enlace ha caducado. Solicita uno nuevo.");
+        }
+
+        // 2. Actualizar Usuario
+        Usuario usuario = verificacion.getUsuario();
+        if (usuario == null) {
+            throw new IllegalStateException("Error de integridad: Token sin usuario asociado.");
+        }
+
+        usuario.setPasswordHash(passwordEncoder.encode(nuevaPassword));
+        usuarioRepository.save(usuario);
+
+        // 3. Marcar token como usado
+        verificacion.setUsado(true);
+        verificacionRepository.save(verificacion);
+
+        log.info("Contraseña restablecida exitosamente para usuario ID: {}", usuario.getId());
     }
 }

@@ -2,6 +2,9 @@ package com.cudeca.repository;
 
 import com.cudeca.model.usuario.VerificacionCuenta;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -32,4 +35,15 @@ public interface VerificacionCuentaRepository extends JpaRepository<Verificacion
      * - Limpieza: "Borrar tokens antiguos de este email".
      */
     List<VerificacionCuenta> findByEmail(String email);
+
+    /**
+     * Invalida (marca como usados) todos los tokens activos previos de un usuario.
+     * Esto evita que si un usuario solicita restablecer contraseña 3 veces,
+     * los 2 enlaces antiguos sigan funcionando. Solo el último (que se creará después de esta llamada) valdrá.
+     *
+     * @param usuarioId ID del usuario
+     */
+    @Modifying
+    @Query("UPDATE VerificacionCuenta v SET v.usado = true WHERE v.usuario.id = :usuarioId AND v.usado = false")
+    void anularTokensPrevios(@Param("usuarioId") Long usuarioId);
 }

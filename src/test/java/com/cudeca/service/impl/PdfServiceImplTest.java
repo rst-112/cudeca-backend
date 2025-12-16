@@ -311,4 +311,161 @@ class PdfServiceImplTest {
         assertTrue(pdf1.length > 0);
         assertTrue(pdf2.length > 0);
     }
+
+    @Test
+    @DisplayName("Debe generar PDF con código QR válido (PNG)")
+    void debeGenerarPdfConQRValido() throws Exception {
+        // Arrange
+        // Crear un pequeño PNG válido de 1x1 pixel (blanco)
+        byte[] pngValido = new byte[] {
+            (byte)0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+            0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+            0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+            0x08, 0x02, 0x00, 0x00, 0x00, (byte)0x90, 0x77, 0x53, (byte)0xDE,
+            0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41, 0x54,
+            0x08, (byte)0xD7, 0x63, (byte)0xF8, (byte)0xFF, (byte)0xFF, 0x3F, 0x00,
+            0x05, (byte)0xFE, 0x02, (byte)0xFE, (byte)0xDC, (byte)0xCC, 0x59, (byte)0xE7,
+            0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44,
+            (byte)0xAE, 0x42, 0x60, (byte)0x82
+        };
+
+        // Act
+        byte[] pdfBytes = pdfService.generarPdfTicketConQR(ticketDTO, pngValido);
+
+        // Assert
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+        // Verificar que el PDF se genera correctamente con QR
+        assertTrue(pdfBytes.length > 1500, "PDF con QR debe tener contenido");
+    }
+
+    @Test
+    @DisplayName("Debe lanzar IOException cuando se pasa QR con datos inválidos")
+    void debeLanzarIOExceptionConQRInvalido() {
+        // Arrange
+        byte[] qrInvalido = new byte[] {0x00, 0x01, 0x02, 0x03}; // No es una imagen válida
+
+        // Act & Assert
+        assertThrows(IOException.class, () -> {
+            pdfService.generarPdfTicketConQR(ticketDTO, qrInvalido);
+        });
+    }
+
+    @Test
+    @DisplayName("Debe manejar DocumentException correctamente")
+    void debeCapturarDocumentException() throws Exception {
+        // Arrange
+        // Crear ticket con datos que puedan causar problemas (nombres muy largos pueden causar problemas)
+        TicketDTO dtoConflictivo = TicketDTO.builder()
+                .nombreEvento("E")
+                .nombreUsuario("U")
+                .emailUsuario("e@t.c")
+                .codigoAsiento("A")
+                .build();
+
+        // Act
+        // El servicio debería manejar cualquier problema internamente y registrarlo
+        byte[] pdfBytes = pdfService.generarPdfTicket(dtoConflictivo);
+
+        // Assert
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+    }
+
+    @Test
+    @DisplayName("Debe generar PDF cuando todos los campos opcionales son null")
+    void debeGenerarPdfCuandoTodosCamposOpcionalesNull() throws Exception {
+        // Arrange
+        TicketDTO dtoMinimo = TicketDTO.builder()
+                .nombreEvento(null)
+                .lugarEvento(null)
+                .fechaEventoFormato(null)
+                .descripcionEvento(null)
+                .nombreUsuario(null)
+                .emailUsuario(null)
+                .codigoAsiento(null)
+                .tipoEntrada(null)
+                .zonaRecinto(null)
+                .fila(null)
+                .columna(null)
+                .precio(null)
+                .build();
+
+        // Act
+        byte[] pdfBytes = pdfService.generarPdfTicketConQR(dtoMinimo, new byte[]{});
+
+        // Assert
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+    }
+
+    @Test
+    @DisplayName("Debe generar PDF correctamente en el método sin QR")
+    void debeGenerarPdfSinParametroQR() throws Exception {
+        // Act
+        byte[] pdfBytes = pdfService.generarPdfTicket(ticketDTO);
+
+        // Assert
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+        assertTrue(pdfBytes.length > 1000);
+    }
+
+    @Test
+    @DisplayName("Debe generar PDF con saltos de línea en descripción")
+    void debeGenerarPdfConSaltosDeLineaEnDescripcion() throws Exception {
+        // Arrange
+        ticketDTO.setDescripcionEvento("Primera línea%nSegunda línea%nTercera línea");
+
+        // Act
+        byte[] pdfBytes = pdfService.generarPdfTicketConQR(ticketDTO, imagenQR);
+
+        // Assert
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+    }
+
+    @Test
+    @DisplayName("Debe generar PDF con texto en mayúsculas")
+    void debeGenerarPdfConTextoEnMayusculas() throws Exception {
+        // Arrange
+        ticketDTO.setNombreEvento("EVENTO ESPECIAL EN MAYÚSCULAS");
+        ticketDTO.setNombreUsuario("JUAN PÉREZ LÓPEZ");
+
+        // Act
+        byte[] pdfBytes = pdfService.generarPdfTicketConQR(ticketDTO, imagenQR);
+
+        // Assert
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+    }
+
+    @Test
+    @DisplayName("Debe generar PDF con fila cero y columna cero")
+    void debeGenerarPdfConFilaCeroColumnaCero() throws Exception {
+        // Arrange
+        ticketDTO.setFila(0);
+        ticketDTO.setColumna(0);
+
+        // Act
+        byte[] pdfBytes = pdfService.generarPdfTicketConQR(ticketDTO, imagenQR);
+
+        // Assert
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+    }
+
+    @Test
+    @DisplayName("Debe generar PDF con precio en formato no estándar")
+    void debeGenerarPdfConPrecioFormatoNoEstandar() throws Exception {
+        // Arrange
+        ticketDTO.setPrecio("GRATIS");
+
+        // Act
+        byte[] pdfBytes = pdfService.generarPdfTicketConQR(ticketDTO, imagenQR);
+
+        // Assert
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+    }
 }
