@@ -1,8 +1,6 @@
 package com.cudeca.controller;
 
-import com.cudeca.dto.usuario.AuthResponse;
-import com.cudeca.dto.usuario.LoginRequest;
-import com.cudeca.dto.usuario.RegisterRequest;
+import com.cudeca.dto.usuario.*;
 import com.cudeca.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -93,5 +91,20 @@ public class AuthController {
         // Si llegamos aquí, el token es válido (el filtro JWT ya lo validó)
         boolean isValid = authentication != null && authentication.isAuthenticated();
         return ResponseEntity.ok(Map.of("valid", isValid));
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Solicitar recuperación", description = "Envía un email si el usuario existe.")
+    public ResponseEntity<Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.solicitarRecuperacionPassword(request.getEmail());
+        // Respuesta genérica por seguridad
+        return ResponseEntity.ok(Map.of("message", "Si el correo existe, recibirás instrucciones en breve."));
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Restablecer contraseña", description = "Cambia la contraseña usando un token válido.")
+    public ResponseEntity<Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.restablecerPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Contraseña actualizada correctamente."));
     }
 }

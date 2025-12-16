@@ -972,4 +972,191 @@ class PerfilUsuarioServiceImplTest {
         assertThat(movimientos.get(0).getId()).isEqualTo(2L);
         assertThat(movimientos.get(1).getId()).isEqualTo(1L);
     }
+
+    @Test
+    @DisplayName("Debe obtener historial de compras exitosamente")
+    void testObtenerHistorialCompras_Exitoso() {
+        // Arrange
+        when(usuarioRepository.existsById(1L)).thenReturn(true);
+
+        // Crear evento
+        com.cudeca.model.evento.Evento evento = new com.cudeca.model.evento.Evento();
+        evento.setId(1L);
+        evento.setNombre("Concierto Benéfico CUDECA");
+
+        // Crear tipo de entrada
+        com.cudeca.model.evento.TipoEntrada tipoEntrada = new com.cudeca.model.evento.TipoEntrada();
+        tipoEntrada.setId(1L);
+        tipoEntrada.setNombre("VIP");
+        tipoEntrada.setEvento(evento);
+
+        // Crear artículo de entrada
+        com.cudeca.model.negocio.ArticuloEntrada articuloEntrada = new com.cudeca.model.negocio.ArticuloEntrada();
+        articuloEntrada.setId(1L);
+        articuloEntrada.setPrecioUnitario(new BigDecimal("50.00"));
+        articuloEntrada.setCantidad(2);
+        articuloEntrada.setTipoEntrada(tipoEntrada);
+
+        // Crear compra
+        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
+        compra.setId(1L);
+        compra.setFecha(java.time.OffsetDateTime.of(2024, 11, 15, 10, 30, 0, 0, java.time.ZoneOffset.UTC));
+        compra.setEstado(com.cudeca.model.enums.EstadoCompra.COMPLETADA);
+        compra.setArticulos(java.util.List.of(articuloEntrada));
+
+        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
+
+        // Act
+        java.util.List<java.util.Map<String, Object>> historial = 
+            perfilUsuarioService.obtenerHistorialCompras(1L);
+
+        // Assert
+        assertThat(historial).hasSize(1);
+        
+        java.util.Map<String, Object> dto = historial.get(0);
+        assertThat(dto.get("id")).isEqualTo("1");
+        assertThat(dto.get("date")).asString().contains("15 de noviembre, 2024");
+        assertThat(dto.get("status")).isEqualTo("COMPLETADA");
+        assertThat(dto.get("total")).isEqualTo("100.00€");
+        assertThat(dto.get("title")).isEqualTo("Concierto Benéfico CUDECA");
+        assertThat(dto.get("tickets")).isEqualTo("2 entradas");
+        
+        verify(usuarioRepository).existsById(1L);
+        verify(compraRepository).findByUsuario_Id(1L);
+    }
+
+    @Test
+    @DisplayName("Debe obtener historial vacío si usuario no tiene compras")
+    void testObtenerHistorialCompras_SinCompras() {
+        // Arrange
+        when(usuarioRepository.existsById(1L)).thenReturn(true);
+        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.Collections.emptyList());
+
+        // Act
+        java.util.List<java.util.Map<String, Object>> historial = 
+            perfilUsuarioService.obtenerHistorialCompras(1L);
+
+        // Assert
+        assertThat(historial).isEmpty();
+        verify(usuarioRepository).existsById(1L);
+    }
+
+    @Test
+    @DisplayName("Debe lanzar excepción al obtener historial de usuario inexistente")
+    void testObtenerHistorialCompras_UsuarioNoExiste() {
+        // Arrange
+        when(usuarioRepository.existsById(999L)).thenReturn(false);
+
+        // Act & Assert
+        assertThatThrownBy(() -> perfilUsuarioService.obtenerHistorialCompras(999L))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Usuario no encontrado");
+
+        verify(usuarioRepository).existsById(999L);
+        verify(compraRepository, never()).findByUsuario_Id(anyLong());
+    }
+
+    @Test
+    @DisplayName("Debe usar título por defecto si no hay eventos")
+    void testObtenerHistorialCompras_SinEventos() {
+        // Arrange
+        when(usuarioRepository.existsById(1L)).thenReturn(true);
+
+        // Crear artículo de donación (sin evento)
+        com.cudeca.model.negocio.ArticuloDonacion articuloDonacion = 
+            com.cudeca.model.negocio.ArticuloDonacion.builder()
+                .precioUnitario(new BigDecimal("25.00"))
+                .cantidad(1)
+                .build();
+        articuloDonacion.setId(1L);
+
+        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
+        compra.setId(1L);
+        compra.setFecha(java.time.OffsetDateTime.now());
+        compra.setEstado(com.cudeca.model.enums.EstadoCompra.COMPLETADA);
+        compra.setArticulos(java.util.List.of(articuloDonacion));
+
+        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
+
+        // Act
+        java.util.List<java.util.Map<String, Object>> historial = 
+            perfilUsuarioService.obtenerHistorialCompras(1L);
+
+        // Assert
+        assertThat(historial).hasSize(1);
+        java.util.Map<String, Object> dto = historial.get(0);
+        assertThat(dto.get("title")).isEqualTo("Compra General");
+        assertThat(dto.get("tickets")).isEqualTo("0 entradas");
+    }
+
+    @Test
+    @DisplayName("Debe manejar entradas sin tipo de entrada")
+    void testObtenerHistorialCompras_EntradasSinTipo() {
+        // Arrange
+        when(usuarioRepository.existsById(1L)).thenReturn(true);
+
+        com.cudeca.model.negocio.ArticuloEntrada articuloEntrada = new com.cudeca.model.negocio.ArticuloEntrada();
+        articuloEntrada.setId(1L);
+        articuloEntrada.setPrecioUnitario(new BigDecimal("30.00"));
+        articuloEntrada.setCantidad(3);
+        articuloEntrada.setTipoEntrada(null); // Sin tipo de entrada
+
+        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
+        compra.setId(1L);
+        compra.setFecha(java.time.OffsetDateTime.now());
+        compra.setEstado(com.cudeca.model.enums.EstadoCompra.COMPLETADA);
+        compra.setArticulos(java.util.List.of(articuloEntrada));
+
+        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
+
+        // Act
+        java.util.List<java.util.Map<String, Object>> historial = 
+            perfilUsuarioService.obtenerHistorialCompras(1L);
+
+        // Assert
+        assertThat(historial).hasSize(1);
+        java.util.Map<String, Object> dto = historial.get(0);
+        assertThat(dto.get("title")).isEqualTo("Compra General");
+        assertThat(dto.get("tickets")).isEqualTo("3 entradas");
+        assertThat(dto.get("total")).isEqualTo("90.00€");
+    }
+
+    @Test
+    @DisplayName("Debe calcular total correctamente con múltiples artículos")
+    void testObtenerHistorialCompras_CalculoTotalMultiplesArticulos() {
+        // Arrange
+        when(usuarioRepository.existsById(1L)).thenReturn(true);
+
+        com.cudeca.model.negocio.ArticuloEntrada articulo1 = new com.cudeca.model.negocio.ArticuloEntrada();
+        articulo1.setId(1L);
+        articulo1.setPrecioUnitario(new BigDecimal("50.00"));
+        articulo1.setCantidad(2);
+        articulo1.setTipoEntrada(null);
+
+        com.cudeca.model.negocio.ArticuloDonacion articulo2 = 
+            com.cudeca.model.negocio.ArticuloDonacion.builder()
+                .precioUnitario(new BigDecimal("25.50"))
+                .cantidad(1)
+                .build();
+        articulo2.setId(2L);
+
+        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
+        compra.setId(1L);
+        compra.setFecha(java.time.OffsetDateTime.now());
+        compra.setEstado(com.cudeca.model.enums.EstadoCompra.PENDIENTE);
+        compra.setArticulos(java.util.List.of(articulo1, articulo2));
+
+        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
+
+        // Act
+        java.util.List<java.util.Map<String, Object>> historial = 
+            perfilUsuarioService.obtenerHistorialCompras(1L);
+
+        // Assert
+        assertThat(historial).hasSize(1);
+        java.util.Map<String, Object> dto = historial.get(0);
+        // 50*2 + 25.50*1 = 125.50
+        assertThat(dto.get("total")).isEqualTo("125.50€");
+        assertThat(dto.get("status")).isEqualTo("PENDIENTE");
+    }
 }

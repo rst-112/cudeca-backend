@@ -191,4 +191,72 @@ class QrCodeServiceImplTest {
         assertNotNull(resultado);
         assertTrue(resultado.length > 0);
     }
+
+    @Test
+    @DisplayName("Debe propagar excepción cuando ocurre error de codificación")
+    void debePropagzarWriterException() {
+        // Arrange
+        // Un tamaño inválido (negativo) causará IllegalArgumentException (que es subclase de Exception)
+        
+        // Act & Assert
+        assertThrows(Exception.class, () -> {
+            qrCodeService.generarCodigoQR(contenidoQR, -1, -1);
+        });
+    }
+
+    @Test
+    @DisplayName("Debe manejar contenido con emojis")
+    void debeGenerarQRConEmojis() throws IOException, WriterException {
+        // Arrange
+        String contenidoConEmojis = "QR-CUDECA-2024 ❤️ 🎭";
+
+        // Act
+        byte[] resultado = qrCodeService.generarCodigoQR(contenidoConEmojis);
+
+        // Assert
+        assertNotNull(resultado);
+        assertTrue(resultado.length > 0);
+    }
+
+    @Test
+    @DisplayName("Debe generar QR con contenido de un solo carácter")
+    void debeGenerarQRConUnCaracter() throws IOException, WriterException {
+        // Arrange
+        String contenidoMinimo = "A";
+
+        // Act
+        byte[] resultado = qrCodeService.generarCodigoQR(contenidoMinimo);
+
+        // Assert
+        assertNotNull(resultado);
+        assertTrue(resultado.length > 0);
+    }
+
+    @Test
+    @DisplayName("Debe generar QR con salto de línea en el contenido")
+    void debeGenerarQRConSaltoDeLinea() throws IOException, WriterException {
+        // Arrange
+        String contenidoConSalto = "Primera Línea%nSegunda Línea%nTercera Línea";
+
+        // Act
+        byte[] resultado = qrCodeService.generarCodigoQR(contenidoConSalto);
+
+        // Assert
+        assertNotNull(resultado);
+        assertTrue(resultado.length > 0);
+    }
+
+    @Test
+    @DisplayName("Debe generar QR con contenido numérico")
+    void debeGenerarQRConContenidoNumerico() throws IOException, WriterException {
+        // Arrange
+        String contenidoNumerico = "1234567890";
+
+        // Act
+        byte[] resultado = qrCodeService.generarCodigoQR(contenidoNumerico);
+
+        // Assert
+        assertNotNull(resultado);
+        assertTrue(resultado.length > 0);
+    }
 }
