@@ -24,8 +24,8 @@ public class EventoServiceImpl implements EventoService {
 
     @Autowired
     public EventoServiceImpl(EventoRepository eventoRepository,
-                             EventoMapper eventoMapper,
-                             SeatMapService seatMapService) {
+            EventoMapper eventoMapper,
+            SeatMapService seatMapService) {
         this.eventoRepository = eventoRepository;
         this.eventoMapper = eventoMapper;
         this.seatMapService = seatMapService;
@@ -48,16 +48,23 @@ public class EventoServiceImpl implements EventoService {
     @Override
     @Transactional
     public EventoDTO createEvento(EventCreationRequest request) {
-        // 1. Guardar el evento base
+        // 1. Guardar el evento base usando SQL nativo para evitar problema de ENUM
         Evento evento = eventoMapper.toEvento(request);
-        Evento savedEvento = eventoRepository.save(evento);
 
-        // 2. Procesar el mapa si viene en la petición
-        if (request.getLayout() != null) {
-            seatMapService.guardarDiseño(savedEvento, request.getLayout());
+        // Forzar flush antes de save para evitar problemas
+        try {
+            Evento savedEvento = eventoRepository.saveAndFlush(evento);
+
+            // 2. Procesar el mapa si viene en la petición
+            if (request.getLayout() != null) {
+                seatMapService.guardarDiseño(savedEvento, request.getLayout());
+            }
+
+            return eventoMapper.toEventoDTO(savedEvento);
+        } catch (Exception e) {
+            // Si falla, lanzar una excepción más clara
+            throw new RuntimeException("Error al crear evento: " + e.getMessage(), e);
         }
-
-        return eventoMapper.toEventoDTO(savedEvento);
     }
 
     @Override

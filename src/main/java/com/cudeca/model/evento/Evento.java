@@ -60,7 +60,6 @@ public class Evento {
     @Column(name = "imagen_url", length = 255)
     private String imagenUrl;
 
-
     // --- RELACIONES ---
 
     @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
