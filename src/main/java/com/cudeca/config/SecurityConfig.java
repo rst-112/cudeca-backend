@@ -1,6 +1,7 @@
 package com.cudeca.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -33,6 +34,9 @@ public class SecurityConfig {
     // Inyección del Proveedor de Autenticación (AuthManager, PasswordEncoder, UserDetailsService)
     private final AuthenticationProvider authenticationProvider;
 
+    @Value("${application.frontend.url}")
+    private String frontendUrl;
+
     /**
      * Define la cadena de filtros de seguridad HTTP principal.
      *
@@ -54,11 +58,22 @@ public class SecurityConfig {
 
                 // 4. Reglas de Autorización (Permisos de acceso)
                 .authorizeHttpRequests(auth -> auth
-                        // Permite acceso a rutas de autenticación públicas (login, register) y Swagger (Sin token)
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/public/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                        // Permite acceso PÚBLICO a la lista de eventos y al detalle de un evento
+                        // RUTAS PÚBLICAS (Auth + Swagger)
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/register",
+                                "/api/auth/forgot-password",
+                                "/api/auth/reset-password",
+                                "/api/public/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+
+                        // Eventos públicos (GET)
                         .requestMatchers(HttpMethod.GET, "/api/eventos", "/api/eventos/**").permitAll()
-                        // Cualquier otra petición debe estar autenticada (incluyendo /api/auth/validate)
+
+                        // Todo lo demás requiere Token
                         .anyRequest().authenticated()
                 )
 
@@ -80,7 +95,7 @@ public class SecurityConfig {
         final CorsConfiguration configuration = new CorsConfiguration();
 
         // Orígenes permitidos (frontend local y producción)
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "https://cudeca-frontend.vercel.app"));
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", frontendUrl));
 
         // Métodos y cabeceras permitidas
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
