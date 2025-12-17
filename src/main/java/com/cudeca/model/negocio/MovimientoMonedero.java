@@ -1,6 +1,7 @@
 package com.cudeca.model.negocio;
 
 import com.cudeca.model.enums.TipoMovimiento;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -28,10 +29,11 @@ public class MovimientoMonedero {
     @JoinColumn(name = "monedero_id", nullable = false)
     @NotNull(message = "El monedero es obligatorio")
     @ToString.Exclude
+    @JsonIgnore
     private Monedero monedero;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(columnDefinition = "tipo_mov_mon", nullable = false)
     @NotNull(message = "El tipo de movimiento es obligatorio")
     private TipoMovimiento tipo;
 

@@ -1,6 +1,7 @@
 package com.cudeca.model.negocio;
 
 import com.cudeca.model.usuario.Usuario;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,12 +25,14 @@ public class Monedero {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "usuario_id", unique = true, nullable = false)
     @ToString.Exclude
+    @JsonIgnore
     private Usuario usuario;
 
     // --- RELACIÓN 1:N CON MOVIMIENTOS ---
     @OneToMany(mappedBy = "monedero", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     @ToString.Exclude
+    @JsonIgnore
     private List<MovimientoMonedero> movimientos = new ArrayList<>();
 
     // --- SALDO ---
