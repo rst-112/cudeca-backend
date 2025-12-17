@@ -15,9 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,7 +45,7 @@ class EventoServiceImplTest {
         EventoDTO eventoDTO = new EventoDTO();
         eventoDTO.setId(1L);
 
-        when(eventoRepository.findAll()).thenReturn(Arrays.asList(evento));
+        when(eventoRepository.findAll()).thenReturn(List.of(evento));
         when(eventoMapper.toEventoDTO(evento)).thenReturn(eventoDTO);
 
         // Act
@@ -95,14 +92,14 @@ class EventoServiceImplTest {
         // Arrange
         EventCreationRequest request = new EventCreationRequest();
         request.setNombre("Test Event");
-        
+
         Evento evento = new Evento();
         evento.setNombre("Test Event");
-        
+
         Evento savedEvento = new Evento();
         savedEvento.setId(1L);
         savedEvento.setNombre("Test Event");
-        
+
         EventoDTO expectedDto = new EventoDTO();
         expectedDto.setId(1L);
         expectedDto.setNombre("Test Event");
@@ -147,7 +144,7 @@ class EventoServiceImplTest {
         assertEquals(EstadoEvento.PUBLICADO, result.getEstado());
         verify(eventoRepository).save(evento);
     }
-    
+
     @Test
     void deleteEvento_WhenExists_ShouldDelete() {
         // Arrange
@@ -179,14 +176,14 @@ class EventoServiceImplTest {
         request.setNombre("Test Event");
         SeatMapLayoutDTO layout = new SeatMapLayoutDTO();
         request.setLayout(layout);
-        
+
         Evento evento = new Evento();
         evento.setNombre("Test Event");
-        
+
         Evento savedEvento = new Evento();
         savedEvento.setId(1L);
         savedEvento.setNombre("Test Event");
-        
+
         EventoDTO expectedDto = new EventoDTO();
         expectedDto.setId(1L);
         expectedDto.setNombre("Test Event");
@@ -210,15 +207,15 @@ class EventoServiceImplTest {
         Long id = 1L;
         EventCreationRequest request = new EventCreationRequest();
         request.setNombre("Updated Event");
-        
+
         Evento evento = new Evento();
         evento.setId(id);
         evento.setNombre("Old Event");
-        
+
         Evento updatedEvento = new Evento();
         updatedEvento.setId(id);
         updatedEvento.setNombre("Updated Event");
-        
+
         EventoDTO expectedDto = new EventoDTO();
         expectedDto.setId(id);
         expectedDto.setNombre("Updated Event");

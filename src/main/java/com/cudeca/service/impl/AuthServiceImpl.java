@@ -201,13 +201,13 @@ public class AuthServiceImpl implements AuthService {
         String link = frontendUrl + "/reset-password?token=" + token;
         return String.format(
                 "<div style=\"font-family: Arial, sans-serif; color: #333;\">%n" +
-                    "<h2 style=\"color: #00A651;\">Recuperación de Contraseña</h2>%n" +
-                    "<p>Hola %s,</p>%n" +
-                    "<p>Hemos recibido una solicitud para restablecer tu contraseña en CUDECA.</p>%n" +
-                    "<p>Haz clic en el siguiente botón para crear una nueva contraseña:</p>%n" +
-                    "<a href=\"%s\" style=\"background-color: #00A651; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;\">Restablecer Contraseña</a>%n" +
-                    "<p style=\"font-size: 12px; color: #666;\">Este enlace expirará en 1 hora. Si no has solicitado esto, puedes ignorar este correo.</p>%n" +
-                "</div>", 
+                        "<h2 style=\"color: #00A651;\">Recuperación de Contraseña</h2>%n" +
+                        "<p>Hola %s,</p>%n" +
+                        "<p>Hemos recibido una solicitud para restablecer tu contraseña en CUDECA.</p>%n" +
+                        "<p>Haz clic en el siguiente botón para crear una nueva contraseña:</p>%n" +
+                        "<a href=\"%s\" style=\"background-color: #00A651; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 20px 0;\">Restablecer Contraseña</a>%n" +
+                        "<p style=\"font-size: 12px; color: #666;\">Este enlace expirará en 1 hora. Si no has solicitado esto, puedes ignorar este correo.</p>%n" +
+                        "</div>",
                 usuario.getNombre(), link);
     }
 

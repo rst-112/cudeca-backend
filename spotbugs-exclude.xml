@@ -40,4 +40,11 @@
         <Package name="~com\.cudeca\.config\..*"/>
         <Bug pattern="EI_EXPOSE_REP2"/>
     </Match>
+
+    <!-- Excluir EI_EXPOSE_REP2 en EventoServiceImpl - ObjectMapper es inmutable por diseño -->
+    <Match>
+        <Class name="com.cudeca.service.impl.EventoServiceImpl"/>
+        <Field name="objectMapper"/>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
 </FindBugsFilter>

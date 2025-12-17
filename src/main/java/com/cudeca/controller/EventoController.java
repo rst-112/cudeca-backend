@@ -1,6 +1,7 @@
 package com.cudeca.controller;
 
 import com.cudeca.dto.evento.EventoDTO;
+import com.cudeca.dto.evento.MapaAsientosDTO;
 import com.cudeca.dto.usuario.EventCreationRequest;
 import com.cudeca.service.EventoService;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -43,7 +44,8 @@ public class EventoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EventoDTO> updateEvento(@PathVariable Long id, @Valid @RequestBody EventCreationRequest request) {
+    public ResponseEntity<EventoDTO> updateEvento(@PathVariable Long id,
+                                                  @Valid @RequestBody EventCreationRequest request) {
         EventoDTO updatedEvento = eventoService.updateEvento(id, request);
         return ResponseEntity.ok(updatedEvento);
     }
@@ -70,5 +72,18 @@ public class EventoController {
     public ResponseEntity<EventoDTO> finalizarEvento(@PathVariable Long id) {
         EventoDTO updatedEvento = eventoService.finalizarEvento(id);
         return ResponseEntity.ok(updatedEvento);
+    }
+
+    @GetMapping("/{id}/mapa-asientos")
+    public ResponseEntity<MapaAsientosDTO> getMapaAsientos(@PathVariable Long id) {
+        // Eliminamos el try-catch. Si hay un error, que salte la excepción y el
+        // GlobalExceptionHandler se encargue.
+        MapaAsientosDTO mapaAsientos = eventoService.getMapaAsientos(id);
+
+        if (mapaAsientos == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(mapaAsientos);
     }
 }
