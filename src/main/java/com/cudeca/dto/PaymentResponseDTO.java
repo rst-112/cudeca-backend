@@ -1,4 +1,4 @@
-package com.cudeca.dto.usuario;
+package com.cudeca.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthResponse {
-    private String token;
-    private UserResponse user;
+public class PaymentResponseDTO {
+    private String clientSecret;
+    private String paymentIntentId;
 }

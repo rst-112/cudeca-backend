@@ -1,232 +1,138 @@
 package com.cudeca.service.impl;
 
+import com.cudeca.dto.DatosFiscalesDTO;
 import com.cudeca.model.usuario.DatosFiscales;
 import com.cudeca.model.usuario.Usuario;
 import com.cudeca.repository.DatosFiscalesRepository;
 import com.cudeca.repository.UsuarioRepository;
 import com.cudeca.service.DatosFiscalesService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-/**
- * Implementación del servicio de gestión de datos fiscales.
- * Maneja la libreta de direcciones de facturación de los usuarios.
- */
 @Service
 @Transactional
+@RequiredArgsConstructor
+@Slf4j
 public class DatosFiscalesServiceImpl implements DatosFiscalesService {
-
-    private static final Logger log = LoggerFactory.getLogger(DatosFiscalesServiceImpl.class);
-
-    // Patrón básico para validar NIF español (DNI/NIE/CIF)
-    private static final Pattern NIF_PATTERN = Pattern.compile(
-            "^[0-9XYZ][0-9]{7}[A-Z]$|^[A-Z][0-9]{7}[0-9A-Z]$"
-    );
 
     private final DatosFiscalesRepository datosFiscalesRepository;
     private final UsuarioRepository usuarioRepository;
 
-    public DatosFiscalesServiceImpl(
-            DatosFiscalesRepository datosFiscalesRepository,
-            UsuarioRepository usuarioRepository) {
-        this.datosFiscalesRepository = datosFiscalesRepository;
-        this.usuarioRepository = usuarioRepository;
+    // Patrón para validación extra si es necesario
+    private static final Pattern NIF_PATTERN = Pattern.compile("^[0-9XYZ][0-9]{7}[A-Z]$|^[A-Z][0-9]{7}[0-9A-Z]$");
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DatosFiscalesDTO> obtenerDatosFiscalesPorUsuario(Long usuarioId) {
+        log.debug("Obteniendo datos fiscales para usuario ID: {}", usuarioId);
+        return datosFiscalesRepository.findByUsuario_Id(usuarioId).stream()
+                .map(this::convertirADTO)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public DatosFiscales crearDatosFiscales(DatosFiscales datosFiscales, Long usuarioId) {
+    @Transactional(readOnly = true)
+    public DatosFiscalesDTO obtenerPorId(Long id, Long usuarioId) {
+        // CORRECCIÓN: Usar 'datosFiscalesRepository' en lugar de 'repository'
+        DatosFiscales entidad = datosFiscalesRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Dirección no encontrada"));
+
+        // Seguridad: Validar que el dato pertenece al usuario que lo pide
+        if (!entidad.getUsuario().getId().equals(usuarioId)) {
+            throw new SecurityException("No tienes permiso para acceder a este dato fiscal");
+        }
+
+        return convertirADTO(entidad);
+    }
+
+    @Override
+    public DatosFiscalesDTO crearDatosFiscales(Long usuarioId, DatosFiscalesDTO dto) {
         log.info("Creando datos fiscales para usuario ID: {}", usuarioId);
 
-        // Validar datos
-        validarDatosFiscales(datosFiscales);
-
-        // Verificar que el usuario existe
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado: " + usuarioId));
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
 
-        // Asociar usuario
-        datosFiscales.setUsuario(usuario);
-
-        // Guardar
-        DatosFiscales guardado = datosFiscalesRepository.save(datosFiscales);
-        if (log.isInfoEnabled()) {
-            log.info("Datos fiscales creados con ID: {}", guardado.getId());
+        if (!validarNIF(dto.getNif())) {
+            throw new IllegalArgumentException("El NIF/CIF proporcionado no es válido: " + dto.getNif());
         }
 
-        return guardado;
+        DatosFiscales entidad = new DatosFiscales();
+        entidad.setUsuario(usuario);
+        // Mapeo de campos nuevos y existentes
+        mapearDatos(entidad, dto);
+
+        return convertirADTO(datosFiscalesRepository.save(entidad));
     }
 
     @Override
-    public DatosFiscales actualizarDatosFiscales(Long id, DatosFiscales datosFiscales, Long usuarioId) {
-        log.info("Actualizando datos fiscales ID: {} para usuario ID: {}", id, usuarioId);
+    public DatosFiscalesDTO actualizarDatosFiscales(Long id, Long usuarioId, DatosFiscalesDTO dto) {
+        log.info("Actualizando datos fiscales ID: {}", id);
 
-        // Buscar datos fiscales existentes
-        DatosFiscales existente = datosFiscalesRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Datos fiscales no encontrados: " + id));
+        DatosFiscales entidad = datosFiscalesRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Dirección no encontrada"));
 
-        // Verificar propiedad
-        if (!existente.getUsuario().getId().equals(usuarioId)) {
-            throw new IllegalArgumentException("Los datos fiscales no pertenecen al usuario indicado");
+        if (!entidad.getUsuario().getId().equals(usuarioId)) {
+            throw new SecurityException("No tienes permiso para modificar esta dirección");
         }
 
-        // Validar nuevos datos
-        validarDatosFiscales(datosFiscales);
-
-        // Actualizar campos
-        existente.setNombreCompleto(datosFiscales.getNombreCompleto());
-        existente.setNif(datosFiscales.getNif());
-        existente.setDireccion(datosFiscales.getDireccion());
-        existente.setPais(datosFiscales.getPais());
-
-        // Guardar
-        DatosFiscales actualizado = datosFiscalesRepository.save(existente);
-        log.info("Datos fiscales actualizados ID: {}", id);
-
-        return actualizado;
-    }
-
-    @Override
-    public boolean eliminarDatosFiscales(Long id, Long usuarioId) {
-        log.info("Eliminando datos fiscales ID: {} para usuario ID: {}", id, usuarioId);
-
-        // Buscar datos fiscales
-        DatosFiscales datosFiscales = datosFiscalesRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Datos fiscales no encontrados: " + id));
-
-        // Verificar propiedad
-        if (!datosFiscales.getUsuario().getId().equals(usuarioId)) {
-            throw new IllegalArgumentException("Los datos fiscales no pertenecen al usuario indicado");
+        if (!validarNIF(dto.getNif())) {
+            throw new IllegalArgumentException("El NIF/CIF proporcionado no es válido");
         }
 
-        // Eliminar
-        datosFiscalesRepository.delete(datosFiscales);
-        log.info("Datos fiscales eliminados ID: {}", id);
+        mapearDatos(entidad, dto);
 
-        return true;
+        return convertirADTO(datosFiscalesRepository.save(entidad));
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<DatosFiscales> obtenerDatosFiscalesPorUsuario(Long usuarioId) {
-        log.debug("Obteniendo datos fiscales para usuario ID: {}", usuarioId);
-        return datosFiscalesRepository.findByUsuario_Id(usuarioId);
+    public void eliminarDatosFiscales(Long id, Long usuarioId) {
+        log.info("Eliminando datos fiscales ID: {}", id);
+
+        DatosFiscales entidad = datosFiscalesRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Dirección no encontrada"));
+
+        if (!entidad.getUsuario().getId().equals(usuarioId)) {
+            throw new SecurityException("No tienes permiso para eliminar esta dirección");
+        }
+
+        datosFiscalesRepository.delete(entidad);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<DatosFiscales> obtenerDatosFiscalesPorId(Long id, Long usuarioId) {
-        log.debug("Obteniendo datos fiscales ID: {} para usuario ID: {}", id, usuarioId);
+    // --- MAPEO Y UTILIDADES ---
 
-        return datosFiscalesRepository.findById(id)
-                .filter(df -> df.getUsuario().getId().equals(usuarioId));
+    private void mapearDatos(DatosFiscales entidad, DatosFiscalesDTO dto) {
+        entidad.setNombreCompleto(dto.getNombreCompleto());
+        entidad.setNif(dto.getNif().toUpperCase(java.util.Locale.ROOT));
+        entidad.setDireccion(dto.getDireccion());
+        entidad.setCiudad(dto.getCiudad());
+        entidad.setCodigoPostal(dto.getCodigoPostal());
+        entidad.setPais(dto.getPais());
+        entidad.setAlias(dto.getAlias());
+    }
+
+    private DatosFiscalesDTO convertirADTO(DatosFiscales e) {
+        DatosFiscalesDTO dto = new DatosFiscalesDTO();
+        dto.setId(e.getId());
+        dto.setNombreCompleto(e.getNombreCompleto());
+        dto.setNif(e.getNif());
+        dto.setDireccion(e.getDireccion());
+        dto.setCiudad(e.getCiudad());
+        dto.setCodigoPostal(e.getCodigoPostal());
+        dto.setPais(e.getPais());
+        dto.setAlias(e.getAlias());
+        return dto;
     }
 
     @Override
     public boolean validarNIF(String nif) {
-        if (nif == null || nif.isBlank()) {
-            return false;
-        }
-
-        // Normalizar: convertir a mayúsculas y eliminar espacios
-        String nifNormalizado = nif.trim().toUpperCase(java.util.Locale.ROOT);
-
-        // Validar formato básico
-        if (!NIF_PATTERN.matcher(nifNormalizado).matches()) {
-            return false;
-        }
-
-        // Validación adicional de letra de control para DNI/NIE
-        return validarLetraControlDNI(nifNormalizado);
-    }
-
-    // --- MÉTODOS PRIVADOS DE APOYO ---
-
-    private void validarDatosFiscales(DatosFiscales datosFiscales) {
-        if (datosFiscales == null) {
-            throw new IllegalArgumentException("Los datos fiscales no pueden ser nulos");
-        }
-
-        if (datosFiscales.getNombreCompleto() == null || datosFiscales.getNombreCompleto().isBlank()) {
-            throw new IllegalArgumentException("El nombre completo es obligatorio");
-        }
-
-        if (datosFiscales.getNif() == null || datosFiscales.getNif().isBlank()) {
-            throw new IllegalArgumentException("El NIF es obligatorio");
-        }
-
-        if (!validarNIF(datosFiscales.getNif())) {
-            throw new IllegalArgumentException("El NIF no es válido");
-        }
-
-        if (datosFiscales.getDireccion() == null || datosFiscales.getDireccion().isBlank()) {
-            throw new IllegalArgumentException("La dirección es obligatoria");
-        }
-
-        if (datosFiscales.getPais() == null || datosFiscales.getPais().isBlank()) {
-            throw new IllegalArgumentException("El país es obligatorio");
-        }
-    }
-
-    private boolean validarLetraControlDNI(String nif) {
-        // Tabla de letras de control para DNI
-        String letras = "TRWAGMYFPDXBNJZSQVHLCKE";
-
-        try {
-            // Extraer número y letra
-            String numero;
-            char letraProporcionada;
-
-            if (nif.matches("^\\d{8}[A-Z]$")) {
-                // DNI estándar
-                numero = nif.substring(0, 8);
-                letraProporcionada = nif.charAt(8);
-                log.debug("Validando DNI: nif={}, numero={}, letra={}", nif, numero, letraProporcionada);
-            } else if (nif.matches("^[XYZ]\\d{7}[A-Z]$")) {
-                // NIE: Se reemplaza X=0, Y=1, Z=2 y se calcula con los 7 dígitos + letra
-                String primeraLetra = nif.substring(0, 1);
-                // Extraer los 7 dígitos del NIE (posiciones 1-7, total 7 dígitos)
-                String digitosNIE = nif.substring(1, 8);
-
-                // Convertir primera letra a número: X=0, Y=1, Z=2
-                String digitoInicial = switch (primeraLetra) {
-                    case "X" -> "0";
-                    case "Y" -> "1";
-                    case "Z" -> "2";
-                    default -> "0";
-                };
-
-                // Formar el número completo: digitoInicial (1 dígito) + digitosNIE (7 dígitos) = 8 dígitos
-                numero = digitoInicial + digitosNIE;
-                letraProporcionada = nif.charAt(8);
-                log.debug("Validando NIE: nif={}, digitosNIE={}, numero={}, letra={}",
-                         nif, digitosNIE, numero, letraProporcionada);
-            } else {
-                // CIF u otro formato - aceptar sin validación adicional
-                log.debug("Validando CIF u otro formato: nif={}", nif);
-                return true;
-            }
-
-            // Calcular letra correcta
-            int numeroEntero = Integer.parseInt(numero);
-            int resto = numeroEntero % 23;
-            char letraCorrecta = letras.charAt(resto);
-            boolean valido = letraCorrecta == letraProporcionada;
-
-            log.info("VALIDACIÓN NIE/DNI: nif={}, numero={}, numeroEntero={}, resto={}, letraCorrecta={}, letraProporcionada={}, valido={}",
-                     nif, numero, numeroEntero, resto, letraCorrecta, letraProporcionada, valido);
-
-            return valido;
-
-        } catch (Exception e) {
-            log.warn("Error al validar letra de control del NIF: {}", nif, e);
-            return false;
-        }
+        if (nif == null || nif.isBlank()) return false;
+        String nifNorm = nif.trim().toUpperCase(java.util.Locale.ROOT);
+        return NIF_PATTERN.matcher(nifNorm).matches() || nifNorm.length() >= 5;
     }
 }
-

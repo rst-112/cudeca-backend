@@ -31,6 +31,11 @@ spring:
           auth: false
           starttls.enable: false
 
+stripe:
+  secret-key: sk_test_mock_key_for_testing_only
+  webhook-secret: whsec_mock_webhook_secret_for_testing_only
+  currency: eur
+
 logging:
   level:
     root: WARN

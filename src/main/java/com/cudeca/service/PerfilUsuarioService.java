@@ -1,8 +1,11 @@
 package com.cudeca.service;
 
+import com.cudeca.dto.EntradaUsuarioDTO;
 import com.cudeca.dto.UserProfileDTO;
 import com.cudeca.model.usuario.Usuario;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -32,7 +35,7 @@ public interface PerfilUsuarioService {
      * Actualiza el perfil de un usuario.
      *
      * @param usuarioId ID del usuario a actualizar
-     * @param nombre Nuevo nombre (opcional)
+     * @param nombre    Nuevo nombre (opcional)
      * @param direccion Nueva dirección (opcional)
      * @return DTO con el perfil actualizado
      * @throws IllegalArgumentException si el usuario no existe
@@ -70,7 +73,7 @@ public interface PerfilUsuarioService {
      * @return Lista de entradas emitidas del usuario
      * @throws IllegalArgumentException si el usuario no existe
      */
-    java.util.List<com.cudeca.model.negocio.EntradaEmitida> obtenerEntradasUsuario(Long usuarioId);
+    List<EntradaUsuarioDTO> obtenerEntradasUsuario(Long usuarioId);
 
     /**
      * Genera un PDF de una entrada específica.
@@ -99,5 +102,19 @@ public interface PerfilUsuarioService {
      * @throws IllegalArgumentException si el usuario no existe o no tiene monedero
      */
     java.util.List<com.cudeca.model.negocio.MovimientoMonedero> obtenerMovimientosMonedero(Long usuarioId);
+
+    /**
+     * @param usuarioId ID del usuario
+     * @return Lista de compras
+     */
+    List<Map<String, Object>> obtenerHistorialCompras(Long usuarioId);
+
+    /**
+     *
+     * @param compraId  ID de la compra
+     * @param usuarioId ID del usuario
+     * @return PDF completo
+     */
+    byte[] generarResumenCompraPdf(Long compraId, Long usuarioId);
 }
 

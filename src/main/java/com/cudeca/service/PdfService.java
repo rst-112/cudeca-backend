@@ -1,6 +1,9 @@
 package com.cudeca.service;
 
 import com.cudeca.dto.TicketDTO;
+import com.cudeca.model.negocio.Compra;
+
+import java.util.List;
 
 /**
  * Interfaz para la generación de PDFs de tickets.
@@ -32,5 +35,15 @@ public interface PdfService {
      * @throws Exception Si ocurre un error durante la generación
      */
     byte[] generarPdfTicketConQR(TicketDTO ticketDTO, byte[] imagenQRBytes) throws Exception;
+
+    /**
+     *
+     * @param compra    Datos necesarios para generar el pdf
+     * @param entradas  Información entradas
+     * @param codigosQR CódigosQR de las entradas
+     * @return Array de bytes con el contenido del PDF
+     * @throws Exception Si ocurre un error durante la generación
+     */
+    byte[] generarPdfCompraCompleta(Compra compra, List<TicketDTO> entradas, List<byte[]> codigosQR) throws Exception;
 }
 

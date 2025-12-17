@@ -26,7 +26,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = {}, properties = {"spring.main.allow-bean-definition-overriding=true"})
+@WebMvcTest(controllers = {}, properties = {
+        "spring.main.allow-bean-definition-overriding=true",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration"
+})
 @Import({SecurityConfig.class, JwtAuthFilter.class, SecurityConfigTest.TestConfig.class})
 class SecurityConfigTest {
 
@@ -93,6 +96,12 @@ class SecurityConfigTest {
         @Primary
         public TicketService ticketService() {
             return mock(TicketService.class);
+        }
+
+        @Bean
+        @Primary
+        public StripeService stripeService() {
+            return mock(StripeService.class);
         }
 
         @Bean

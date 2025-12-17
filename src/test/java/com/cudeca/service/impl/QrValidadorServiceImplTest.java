@@ -5,7 +5,9 @@ import com.cudeca.dto.QrValidacionResponseDTO;
 import com.cudeca.model.enums.EstadoEntrada;
 import com.cudeca.model.negocio.EntradaEmitida;
 import com.cudeca.model.negocio.ValidacionEntrada;
+import com.cudeca.model.usuario.Usuario;
 import com.cudeca.repository.EntradaEmitidaRepository;
+import com.cudeca.repository.UsuarioRepository;
 import com.cudeca.repository.ValidacionEntradaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,11 +38,15 @@ class QrValidadorServiceImplTest {
     @Mock
     private ValidacionEntradaRepository validacionEntradaRepository;
 
+    @Mock
+    private UsuarioRepository usuarioRepository;
+
     @InjectMocks
     private QrValidadorServiceImpl qrValidadorService;
 
     private QrValidacionDTO qrValidacionDTO;
     private EntradaEmitida entradaValida;
+    private Usuario usuarioValidador;
     private String codigoQR;
     private String dispositivoId;
 
@@ -49,9 +55,16 @@ class QrValidadorServiceImplTest {
         codigoQR = "QR-TEST-123456";
         dispositivoId = "DEVICE-001";
 
+        usuarioValidador = Usuario.builder()
+                .id(1L)
+                .nombre("Usuario Validador")
+                .email("validador@test.com")
+                .build();
+
         qrValidacionDTO = QrValidacionDTO.builder()
                 .codigoQR(codigoQR)
                 .dispositivoId(dispositivoId)
+                .usuarioValidadorId(1L)
                 .build();
 
         entradaValida = EntradaEmitida.builder()
@@ -65,6 +78,7 @@ class QrValidadorServiceImplTest {
     @DisplayName("Debe validar entrada VALIDA exitosamente y cambiar a USADA")
     void debeValidarEntradaValidaExitosamente() {
         // Arrange
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioValidador));
         when(entradaEmitidaRepository.findByCodigoQR(codigoQR)).thenReturn(Optional.of(entradaValida));
         when(entradaEmitidaRepository.save(any(EntradaEmitida.class))).thenReturn(entradaValida);
         when(validacionEntradaRepository.save(any(ValidacionEntrada.class))).thenReturn(new ValidacionEntrada());
@@ -250,13 +264,14 @@ class QrValidadorServiceImplTest {
         EntradaEmitida entrada1 = EntradaEmitida.builder().id(1L).codigoQR("QR-001").estado(EstadoEntrada.VALIDA).build();
         EntradaEmitida entrada2 = EntradaEmitida.builder().id(2L).codigoQR("QR-002").estado(EstadoEntrada.VALIDA).build();
 
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioValidador));
         when(entradaEmitidaRepository.findByCodigoQR("QR-001")).thenReturn(Optional.of(entrada1));
         when(entradaEmitidaRepository.findByCodigoQR("QR-002")).thenReturn(Optional.of(entrada2));
         when(entradaEmitidaRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
         when(validacionEntradaRepository.save(any())).thenReturn(new ValidacionEntrada());
 
-        QrValidacionDTO dto1 = QrValidacionDTO.builder().codigoQR("QR-001").dispositivoId(dispositivoId).build();
-        QrValidacionDTO dto2 = QrValidacionDTO.builder().codigoQR("QR-002").dispositivoId(dispositivoId).build();
+        QrValidacionDTO dto1 = QrValidacionDTO.builder().codigoQR("QR-001").dispositivoId(dispositivoId).usuarioValidadorId(1L).build();
+        QrValidacionDTO dto2 = QrValidacionDTO.builder().codigoQR("QR-002").dispositivoId(dispositivoId).usuarioValidadorId(1L).build();
 
         // Act
         QrValidacionResponseDTO response1 = qrValidadorService.validarCodigoQR(dto1);
@@ -276,8 +291,10 @@ class QrValidadorServiceImplTest {
         QrValidacionDTO dtoSinDispositivo = QrValidacionDTO.builder()
                 .codigoQR(codigoQR)
                 .dispositivoId(null)
+                .usuarioValidadorId(1L)
                 .build();
 
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioValidador));
         when(entradaEmitidaRepository.findByCodigoQR(codigoQR)).thenReturn(Optional.of(entradaValida));
         when(entradaEmitidaRepository.save(any())).thenReturn(entradaValida);
         when(validacionEntradaRepository.save(any())).thenReturn(new ValidacionEntrada());
@@ -294,6 +311,7 @@ class QrValidadorServiceImplTest {
     @DisplayName("Debe incluir timestamp en todas las respuestas")
     void debeIncluirTimestampEnTodasLasRespuestas() {
         // Arrange
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioValidador));
         when(entradaEmitidaRepository.findByCodigoQR(codigoQR)).thenReturn(Optional.of(entradaValida));
         when(entradaEmitidaRepository.save(any())).thenReturn(entradaValida);
         when(validacionEntradaRepository.save(any())).thenReturn(new ValidacionEntrada());
@@ -318,6 +336,7 @@ class QrValidadorServiceImplTest {
         Long entradaId = 999L;
         entradaValida.setId(entradaId);
 
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioValidador));
         when(entradaEmitidaRepository.findByCodigoQR(codigoQR)).thenReturn(Optional.of(entradaValida));
         when(entradaEmitidaRepository.save(any())).thenReturn(entradaValida);
         when(validacionEntradaRepository.save(any())).thenReturn(new ValidacionEntrada());
@@ -333,6 +352,7 @@ class QrValidadorServiceImplTest {
     @DisplayName("Debe crear registro de validación con entrada asociada")
     void debeCrearRegistroValidacionConEntradaAsociada() {
         // Arrange
+        when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuarioValidador));
         when(entradaEmitidaRepository.findByCodigoQR(codigoQR)).thenReturn(Optional.of(entradaValida));
         when(entradaEmitidaRepository.save(any())).thenReturn(entradaValida);
         when(validacionEntradaRepository.save(any())).thenReturn(new ValidacionEntrada());

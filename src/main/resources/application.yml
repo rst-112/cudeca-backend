@@ -21,6 +21,11 @@ application:
   mail:
     sender: ${MAIL_SENDER:gruposapitos@gmail.com}
 
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  currency: eur
+
 ---
 # ==========================================
 # PERFIL DEV (Local - Docker)
@@ -43,6 +48,9 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          lob:
+            non_contextual_creation: true
         format_sql: true
     open-in-view: false
 
