@@ -43,7 +43,8 @@ public class EventoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<EventoDTO> updateEvento(@PathVariable Long id, @Valid @RequestBody EventCreationRequest request) {
+    public ResponseEntity<EventoDTO> updateEvento(@PathVariable Long id,
+            @Valid @RequestBody EventCreationRequest request) {
         EventoDTO updatedEvento = eventoService.updateEvento(id, request);
         return ResponseEntity.ok(updatedEvento);
     }
@@ -70,5 +71,18 @@ public class EventoController {
     public ResponseEntity<EventoDTO> finalizarEvento(@PathVariable Long id) {
         EventoDTO updatedEvento = eventoService.finalizarEvento(id);
         return ResponseEntity.ok(updatedEvento);
+    }
+
+    @GetMapping("/{id}/mapa-asientos")
+    public ResponseEntity<?> getMapaAsientos(@PathVariable Long id) {
+        try {
+            var mapaAsientos = eventoService.getMapaAsientos(id);
+            if (mapaAsientos == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(mapaAsientos);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }
