@@ -123,10 +123,6 @@ public class Usuario implements UserDetails {
         }
     }
 
-    public boolean esAdmin() {
-        return roles.stream().anyMatch(r -> "ADMINISTRADOR".equalsIgnoreCase(r.getNombre()));
-    }
-
     // --- IMPLEMENTACIÓN DE USERDETAILS ---
 
     @Override

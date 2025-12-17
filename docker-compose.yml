@@ -18,7 +18,7 @@ services:
     restart: always
     ports:
       - "8025:8025" # UI Web para ver emails
-      - "1030:1025" # Servidor SMTP
+      - "1025:1025" # Servidor SMTP
     volumes:
       - mailhog_data:/maildir
 

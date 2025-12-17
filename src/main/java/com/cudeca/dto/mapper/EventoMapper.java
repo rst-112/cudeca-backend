@@ -1,12 +1,13 @@
 package com.cudeca.dto.mapper;
 
 import com.cudeca.dto.evento.EventoDTO;
+import com.cudeca.dto.evento.TipoEntradaDTO;
 import com.cudeca.dto.usuario.EventCreationRequest;
 import com.cudeca.model.enums.EstadoEvento;
 import com.cudeca.model.evento.Evento;
+import com.cudeca.model.evento.TipoEntrada;
 import org.springframework.stereotype.Component;
 
-import com.cudeca.dto.evento.TipoEntradaDTO;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,8 +22,8 @@ public class EventoMapper {
 
         List<TipoEntradaDTO> tiposEntrada = evento.getTiposEntrada() != null
                 ? evento.getTiposEntrada().stream()
-                        .map(this::toTipoEntradaDTO)
-                        .collect(Collectors.toList())
+                .map(this::toTipoEntradaDTO)
+                .collect(Collectors.toList())
                 : Collections.emptyList();
 
         return new EventoDTO(
@@ -37,7 +38,7 @@ public class EventoMapper {
                 tiposEntrada);
     }
 
-    private TipoEntradaDTO toTipoEntradaDTO(com.cudeca.model.evento.TipoEntrada tipo) {
+    private TipoEntradaDTO toTipoEntradaDTO(TipoEntrada tipo) {
         return TipoEntradaDTO.builder()
                 .id(tipo.getId())
                 .nombre(tipo.getNombre())
@@ -61,7 +62,7 @@ public class EventoMapper {
                 .lugar(request.getLugar())
                 .objetivoRecaudacion(request.getObjetivoRecaudacion())
                 .imagenUrl(request.getImagenUrl())
-                .estado(EstadoEvento.BORRADOR) // Estado por defecto al crear
+                .estado(EstadoEvento.BORRADOR)
                 .build();
     }
 
