@@ -15,9 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
-import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,7 +45,7 @@ class EventoServiceImplTest {
         EventoDTO eventoDTO = new EventoDTO();
         eventoDTO.setId(1L);
 
-        when(eventoRepository.findAll()).thenReturn(Arrays.asList(evento));
+        when(eventoRepository.findAll()).thenReturn(List.of(evento));
         when(eventoMapper.toEventoDTO(evento)).thenReturn(eventoDTO);
 
         // Act
@@ -108,7 +105,7 @@ class EventoServiceImplTest {
         expectedDto.setNombre("Test Event");
 
         when(eventoMapper.toEvento(request)).thenReturn(evento);
-        when(eventoRepository.saveAndFlush(evento)).thenReturn(savedEvento);
+        when(eventoRepository.save(evento)).thenReturn(savedEvento);
         when(eventoMapper.toEventoDTO(savedEvento)).thenReturn(expectedDto);
 
         // Act
@@ -118,7 +115,7 @@ class EventoServiceImplTest {
         assertNotNull(result);
         assertEquals(1L, result.getId());
         assertEquals("Test Event", result.getNombre());
-        verify(eventoRepository, times(1)).saveAndFlush(evento);
+        verify(eventoRepository, times(1)).save(evento);
     }
 
     @Test
@@ -192,7 +189,7 @@ class EventoServiceImplTest {
         expectedDto.setNombre("Test Event");
 
         when(eventoMapper.toEvento(request)).thenReturn(evento);
-        when(eventoRepository.saveAndFlush(evento)).thenReturn(savedEvento);
+        when(eventoRepository.save(evento)).thenReturn(savedEvento);
         when(eventoMapper.toEventoDTO(savedEvento)).thenReturn(expectedDto);
 
         // Act
@@ -201,7 +198,7 @@ class EventoServiceImplTest {
         // Assert
         assertNotNull(result);
         verify(seatMapService, times(1)).guardarDiseño(savedEvento, layout);
-        verify(eventoRepository, times(1)).saveAndFlush(evento);
+        verify(eventoRepository, times(1)).save(evento);
     }
 
     @Test
