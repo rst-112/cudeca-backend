@@ -1,5 +1,6 @@
 package com.cudeca.model.usuario;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -36,6 +37,7 @@ public class Rol {
     @Builder.Default
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
+    @JsonIgnore
     private Set<UsuarioRol> asignaciones = new HashSet<>();
 
     public void addPermiso(Permiso permiso) {
