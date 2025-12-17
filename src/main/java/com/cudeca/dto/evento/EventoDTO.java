@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -14,8 +15,11 @@ import java.time.OffsetDateTime;
 public class EventoDTO {
     private Long id;
     private String nombre;
+    private String descripcion;
     private OffsetDateTime fechaInicio;
     private String lugar;
     private EstadoEvento estado;
     private String imagenUrl;
+    private BigDecimal objetivoRecaudacion;
+    private List<TipoEntradaDTO> tiposEntrada;
 }

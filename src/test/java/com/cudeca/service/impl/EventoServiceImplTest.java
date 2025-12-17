@@ -95,20 +95,20 @@ class EventoServiceImplTest {
         // Arrange
         EventCreationRequest request = new EventCreationRequest();
         request.setNombre("Test Event");
-        
+
         Evento evento = new Evento();
         evento.setNombre("Test Event");
-        
+
         Evento savedEvento = new Evento();
         savedEvento.setId(1L);
         savedEvento.setNombre("Test Event");
-        
+
         EventoDTO expectedDto = new EventoDTO();
         expectedDto.setId(1L);
         expectedDto.setNombre("Test Event");
 
         when(eventoMapper.toEvento(request)).thenReturn(evento);
-        when(eventoRepository.save(evento)).thenReturn(savedEvento);
+        when(eventoRepository.saveAndFlush(evento)).thenReturn(savedEvento);
         when(eventoMapper.toEventoDTO(savedEvento)).thenReturn(expectedDto);
 
         // Act
@@ -118,7 +118,7 @@ class EventoServiceImplTest {
         assertNotNull(result);
         assertEquals(1L, result.getId());
         assertEquals("Test Event", result.getNombre());
-        verify(eventoRepository, times(1)).save(evento);
+        verify(eventoRepository, times(1)).saveAndFlush(evento);
     }
 
     @Test
@@ -147,7 +147,7 @@ class EventoServiceImplTest {
         assertEquals(EstadoEvento.PUBLICADO, result.getEstado());
         verify(eventoRepository).save(evento);
     }
-    
+
     @Test
     void deleteEvento_WhenExists_ShouldDelete() {
         // Arrange
@@ -179,20 +179,20 @@ class EventoServiceImplTest {
         request.setNombre("Test Event");
         SeatMapLayoutDTO layout = new SeatMapLayoutDTO();
         request.setLayout(layout);
-        
+
         Evento evento = new Evento();
         evento.setNombre("Test Event");
-        
+
         Evento savedEvento = new Evento();
         savedEvento.setId(1L);
         savedEvento.setNombre("Test Event");
-        
+
         EventoDTO expectedDto = new EventoDTO();
         expectedDto.setId(1L);
         expectedDto.setNombre("Test Event");
 
         when(eventoMapper.toEvento(request)).thenReturn(evento);
-        when(eventoRepository.save(evento)).thenReturn(savedEvento);
+        when(eventoRepository.saveAndFlush(evento)).thenReturn(savedEvento);
         when(eventoMapper.toEventoDTO(savedEvento)).thenReturn(expectedDto);
 
         // Act
@@ -201,7 +201,7 @@ class EventoServiceImplTest {
         // Assert
         assertNotNull(result);
         verify(seatMapService, times(1)).guardarDiseño(savedEvento, layout);
-        verify(eventoRepository, times(1)).save(evento);
+        verify(eventoRepository, times(1)).saveAndFlush(evento);
     }
 
     @Test
@@ -210,15 +210,15 @@ class EventoServiceImplTest {
         Long id = 1L;
         EventCreationRequest request = new EventCreationRequest();
         request.setNombre("Updated Event");
-        
+
         Evento evento = new Evento();
         evento.setId(id);
         evento.setNombre("Old Event");
-        
+
         Evento updatedEvento = new Evento();
         updatedEvento.setId(id);
         updatedEvento.setNombre("Updated Event");
-        
+
         EventoDTO expectedDto = new EventoDTO();
         expectedDto.setId(id);
         expectedDto.setNombre("Updated Event");
