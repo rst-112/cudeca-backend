@@ -23,7 +23,7 @@ public class EntradaEmitida {
     private String codigoQR;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "estado_entrada")
     private EstadoEntrada estado;
 
     @ManyToOne(fetch = FetchType.LAZY)
