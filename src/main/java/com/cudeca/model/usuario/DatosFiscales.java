@@ -1,11 +1,8 @@
 package com.cudeca.model.usuario;
 
-import com.cudeca.model.negocio.CertificadoFiscal;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "DATOS_FISCALES")
@@ -19,19 +16,12 @@ public class DatosFiscales {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- RELACIÓN CON USUARIO (Dueño de la libreta) ---
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id")
+    @JoinColumn(name = "usuario_id", nullable = false)
+    @JsonIgnore
     @ToString.Exclude
     private Usuario usuario;
 
-    // --- RELACIÓN CON CERTIFICADOS (Historial de uso) ---
-    @OneToMany(mappedBy = "datosFiscales")
-    @Builder.Default
-    @ToString.Exclude
-    private List<CertificadoFiscal> certificados = new ArrayList<>();
-
-    // --- DATOS ---
     @Column(name = "nombre_completo", nullable = false, length = 150)
     private String nombreCompleto;
 
@@ -42,5 +32,14 @@ public class DatosFiscales {
     private String direccion;
 
     @Column(nullable = false, length = 100)
+    private String ciudad;
+
+    @Column(name = "codigo_postal", nullable = false, length = 10)
+    private String codigoPostal;
+
+    @Column(nullable = false, length = 100)
     private String pais;
+
+    @Column(length = 50)
+    private String alias;
 }

@@ -200,13 +200,13 @@ class PerfilUsuarioControllerTest {
     void obtenerEntradas_Success() throws Exception {
         // Arrange
         Long usuarioId = 1L;
-        EntradaEmitida entrada1 = new EntradaEmitida();
+        com.cudeca.dto.EntradaUsuarioDTO entrada1 = new com.cudeca.dto.EntradaUsuarioDTO();
         entrada1.setId(1L);
 
-        EntradaEmitida entrada2 = new EntradaEmitida();
+        com.cudeca.dto.EntradaUsuarioDTO entrada2 = new com.cudeca.dto.EntradaUsuarioDTO();
         entrada2.setId(2L);
 
-        List<EntradaEmitida> entradas = Arrays.asList(entrada1, entrada2);
+        List<com.cudeca.dto.EntradaUsuarioDTO> entradas = Arrays.asList(entrada1, entrada2);
         when(perfilUsuarioService.obtenerEntradasUsuario(usuarioId)).thenReturn(entradas);
 
         // Act & Assert
