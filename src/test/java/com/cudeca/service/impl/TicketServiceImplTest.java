@@ -74,10 +74,10 @@ class TicketServiceImplTest {
         verify(pdfService).generarPdfTicketConQR(eq(ticketDTO), eq(imagenQR));
         verify(emailService).enviarCorreoConAdjunto(
                 eq(ticketDTO.getEmailUsuario()),
-                eq("Tu entrada para Concierto CUDECA 2024"),
-                contains("Hola Juan Pérez"),
+                eq("🎟️ Tu entrada para: Concierto CUDECA 2024"),
+                argThat(html -> html != null && html.contains("Hola <strong>Juan Pérez</strong>")),
                 eq(pdfBytes),
-                eq("Entrada_Cudeca.pdf")
+                eq("Entrada_QR-TEST-123.pdf")
         );
     }
 
@@ -196,9 +196,9 @@ class TicketServiceImplTest {
         verify(emailService).enviarCorreoConAdjunto(
                 anyString(),
                 anyString(),
-                argThat(html -> html.contains("Hola Juan Pérez") &&
+                argThat(html -> html.contains("Hola <strong>Juan Pérez</strong>") &&
                         html.contains("Concierto CUDECA 2024") &&
-                        html.contains("Disfruta del evento")),
+                        html.contains("Gracias por tu colaboración")),
                 any(),
                 anyString()
         );
@@ -226,10 +226,10 @@ class TicketServiceImplTest {
         assertTrue(resultado);
         verify(emailService).enviarCorreoConAdjunto(
                 eq("test@test.com"),
-                contains("Tu entrada para null"),
+                eq("🎟️ Tu entrada para: null"),
                 anyString(),
                 eq(pdfBytes),
-                eq("Entrada_Cudeca.pdf")
+                eq("Entrada_QR-NULL-TEST.pdf")
         );
     }
 
@@ -247,7 +247,7 @@ class TicketServiceImplTest {
         // Assert
         verify(emailService).enviarCorreoConAdjunto(
                 anyString(),
-                eq("Tu entrada para Concierto CUDECA 2024"),
+                eq("🎟️ Tu entrada para: Concierto CUDECA 2024"),
                 anyString(),
                 any(),
                 anyString()
@@ -271,7 +271,7 @@ class TicketServiceImplTest {
                 anyString(),
                 anyString(),
                 any(),
-                eq("Entrada_Cudeca.pdf")
+                eq("Entrada_QR-TEST-123.pdf")
         );
     }
 

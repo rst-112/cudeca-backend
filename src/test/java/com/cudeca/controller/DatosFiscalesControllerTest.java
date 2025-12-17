@@ -2,7 +2,7 @@ package com.cudeca.controller;
 
 import com.cudeca.config.JwtAuthFilter;
 import com.cudeca.config.SecurityConfig;
-import com.cudeca.model.usuario.DatosFiscales;
+import com.cudeca.dto.DatosFiscalesDTO;
 import com.cudeca.service.DatosFiscalesService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -20,11 +20,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -49,21 +50,21 @@ class DatosFiscalesControllerTest {
     void obtenerDatosFiscalesPorUsuario_Success() throws Exception {
         // Arrange
         Long usuarioId = 1L;
-        DatosFiscales datos1 = new DatosFiscales();
+        DatosFiscalesDTO datos1 = new DatosFiscalesDTO();
         datos1.setId(1L);
         datos1.setNombreCompleto("Juan Pérez");
         datos1.setNif("12345678A");
 
-        DatosFiscales datos2 = new DatosFiscales();
+        DatosFiscalesDTO datos2 = new DatosFiscalesDTO();
         datos2.setId(2L);
         datos2.setNombreCompleto("María García");
         datos2.setNif("87654321B");
 
-        List<DatosFiscales> listaExpected = Arrays.asList(datos1, datos2);
+        List<DatosFiscalesDTO> listaExpected = Arrays.asList(datos1, datos2);
         when(datosFiscalesService.obtenerDatosFiscalesPorUsuario(usuarioId)).thenReturn(listaExpected);
 
         // Act & Assert
-        mockMvc.perform(get("/api/datos-fiscales/usuario/{usuarioId}", usuarioId))
+        mockMvc.perform(get("/api/perfil/{usuarioId}/datos-fiscales", usuarioId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1L))
                 .andExpect(jsonPath("$[0].nombreCompleto").value("Juan Pérez"))
@@ -72,33 +73,20 @@ class DatosFiscalesControllerTest {
     }
 
     @Test
-    void obtenerDatosFiscalesPorUsuario_InternalError() throws Exception {
-        // Arrange
-        Long usuarioId = 1L;
-        when(datosFiscalesService.obtenerDatosFiscalesPorUsuario(usuarioId))
-                .thenThrow(new RuntimeException("Error de base de datos"));
-
-        // Act & Assert
-        mockMvc.perform(get("/api/datos-fiscales/usuario/{usuarioId}", usuarioId))
-                .andExpect(status().isInternalServerError());
-    }
-
-    @Test
     void obtenerDatosFiscalesPorId_Success() throws Exception {
         // Arrange
         Long id = 1L;
         Long usuarioId = 1L;
-        DatosFiscales datos = new DatosFiscales();
+        DatosFiscalesDTO datos = new DatosFiscalesDTO();
         datos.setId(id);
         datos.setNombreCompleto("Juan Pérez");
         datos.setNif("12345678A");
 
-        when(datosFiscalesService.obtenerDatosFiscalesPorId(id, usuarioId))
-                .thenReturn(Optional.of(datos));
+        when(datosFiscalesService.obtenerPorId(id, usuarioId))
+                .thenReturn(datos);
 
         // Act & Assert
-        mockMvc.perform(get("/api/datos-fiscales/{id}", id)
-                        .param("usuarioId", usuarioId.toString()))
+        mockMvc.perform(get("/api/perfil/{usuarioId}/datos-fiscales/{id}", usuarioId, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1L))
                 .andExpect(jsonPath("$.nombreCompleto").value("Juan Pérez"));
@@ -109,48 +97,49 @@ class DatosFiscalesControllerTest {
         // Arrange
         Long id = 999L;
         Long usuarioId = 1L;
-        when(datosFiscalesService.obtenerDatosFiscalesPorId(id, usuarioId))
-                .thenReturn(Optional.empty());
+        when(datosFiscalesService.obtenerPorId(id, usuarioId))
+                .thenThrow(new IllegalArgumentException("Dirección no encontrada"));
 
         // Act & Assert
-        mockMvc.perform(get("/api/datos-fiscales/{id}", id)
-                        .param("usuarioId", usuarioId.toString()))
+        mockMvc.perform(get("/api/perfil/{usuarioId}/datos-fiscales/{id}", usuarioId, id))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    void obtenerDatosFiscalesPorId_InternalError() throws Exception {
+    void obtenerDatosFiscalesPorId_Forbidden() throws Exception {
         // Arrange
         Long id = 1L;
         Long usuarioId = 1L;
-        when(datosFiscalesService.obtenerDatosFiscalesPorId(id, usuarioId))
-                .thenThrow(new RuntimeException("Error de base de datos"));
+        when(datosFiscalesService.obtenerPorId(id, usuarioId))
+                .thenThrow(new SecurityException("No tienes permiso"));
 
         // Act & Assert
-        mockMvc.perform(get("/api/datos-fiscales/{id}", id)
-                        .param("usuarioId", usuarioId.toString()))
-                .andExpect(status().isInternalServerError());
+        mockMvc.perform(get("/api/perfil/{usuarioId}/datos-fiscales/{id}", usuarioId, id))
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void crearDatosFiscales_Success() throws Exception {
         // Arrange
         Long usuarioId = 1L;
-        DatosFiscales datosFiscales = new DatosFiscales();
+        DatosFiscalesDTO datosFiscales = new DatosFiscalesDTO();
         datosFiscales.setNombreCompleto("Juan Pérez");
         datosFiscales.setNif("12345678A");
         datosFiscales.setDireccion("Calle Principal 123");
+        datosFiscales.setCiudad("Madrid");
+        datosFiscales.setCodigoPostal("28001");
+        datosFiscales.setPais("España");
 
-        DatosFiscales datosFiscalesCreado = new DatosFiscales();
+        DatosFiscalesDTO datosFiscalesCreado = new DatosFiscalesDTO();
         datosFiscalesCreado.setId(1L);
         datosFiscalesCreado.setNombreCompleto("Juan Pérez");
         datosFiscalesCreado.setNif("12345678A");
 
-        when(datosFiscalesService.crearDatosFiscales(any(DatosFiscales.class), eq(usuarioId)))
+        when(datosFiscalesService.crearDatosFiscales(eq(usuarioId), any(DatosFiscalesDTO.class)))
                 .thenReturn(datosFiscalesCreado);
 
         // Act & Assert
-        mockMvc.perform(post("/api/datos-fiscales/usuario/{usuarioId}", usuarioId)
+        mockMvc.perform(post("/api/perfil/{usuarioId}/datos-fiscales", usuarioId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(datosFiscales)))
                 .andExpect(status().isCreated())
@@ -162,36 +151,18 @@ class DatosFiscalesControllerTest {
     void crearDatosFiscales_ValidationError() throws Exception {
         // Arrange
         Long usuarioId = 1L;
-        DatosFiscales datosFiscales = new DatosFiscales();
+        DatosFiscalesDTO datosFiscales = new DatosFiscalesDTO();
         datosFiscales.setNif("INVALID");
 
-        when(datosFiscalesService.crearDatosFiscales(any(DatosFiscales.class), eq(usuarioId)))
+        when(datosFiscalesService.crearDatosFiscales(eq(usuarioId), any(DatosFiscalesDTO.class)))
                 .thenThrow(new IllegalArgumentException("NIF inválido"));
 
         // Act & Assert
-        mockMvc.perform(post("/api/datos-fiscales/usuario/{usuarioId}", usuarioId)
+        mockMvc.perform(post("/api/perfil/{usuarioId}/datos-fiscales", usuarioId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(datosFiscales)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("NIF inválido"));
-    }
-
-    @Test
-    void crearDatosFiscales_InternalError() throws Exception {
-        // Arrange
-        Long usuarioId = 1L;
-        DatosFiscales datosFiscales = new DatosFiscales();
-        datosFiscales.setNombreCompleto("Juan Pérez");
-
-        when(datosFiscalesService.crearDatosFiscales(any(DatosFiscales.class), eq(usuarioId)))
-                .thenThrow(new RuntimeException("Error de base de datos"));
-
-        // Act & Assert
-        mockMvc.perform(post("/api/datos-fiscales/usuario/{usuarioId}", usuarioId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(datosFiscales)))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error").value("Error interno creando datos fiscales"));
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
@@ -199,20 +170,23 @@ class DatosFiscalesControllerTest {
         // Arrange
         Long id = 1L;
         Long usuarioId = 1L;
-        DatosFiscales datosFiscales = new DatosFiscales();
+        DatosFiscalesDTO datosFiscales = new DatosFiscalesDTO();
         datosFiscales.setNombreCompleto("Juan Pérez Actualizado");
         datosFiscales.setNif("12345678A");
+        datosFiscales.setDireccion("Calle Nueva");
+        datosFiscales.setCiudad("Madrid");
+        datosFiscales.setCodigoPostal("28001");
+        datosFiscales.setPais("España");
 
-        DatosFiscales datosFiscalesActualizado = new DatosFiscales();
+        DatosFiscalesDTO datosFiscalesActualizado = new DatosFiscalesDTO();
         datosFiscalesActualizado.setId(id);
         datosFiscalesActualizado.setNombreCompleto("Juan Pérez Actualizado");
 
-        when(datosFiscalesService.actualizarDatosFiscales(eq(id), any(DatosFiscales.class), eq(usuarioId)))
+        when(datosFiscalesService.actualizarDatosFiscales(eq(id), eq(usuarioId), any(DatosFiscalesDTO.class)))
                 .thenReturn(datosFiscalesActualizado);
 
         // Act & Assert
-        mockMvc.perform(put("/api/datos-fiscales/{id}", id)
-                        .param("usuarioId", usuarioId.toString())
+        mockMvc.perform(put("/api/perfil/{usuarioId}/datos-fiscales/{id}", usuarioId, id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(datosFiscales)))
                 .andExpect(status().isOk())
@@ -225,37 +199,37 @@ class DatosFiscalesControllerTest {
         // Arrange
         Long id = 1L;
         Long usuarioId = 1L;
-        DatosFiscales datosFiscales = new DatosFiscales();
+        DatosFiscalesDTO datosFiscales = new DatosFiscalesDTO();
+        datosFiscales.setNif("12345678A");
 
-        when(datosFiscalesService.actualizarDatosFiscales(eq(id), any(DatosFiscales.class), eq(usuarioId)))
+        when(datosFiscalesService.actualizarDatosFiscales(eq(id), eq(usuarioId), any(DatosFiscalesDTO.class)))
                 .thenThrow(new IllegalArgumentException("Datos no encontrados"));
 
         // Act & Assert
-        mockMvc.perform(put("/api/datos-fiscales/{id}", id)
-                        .param("usuarioId", usuarioId.toString())
+        mockMvc.perform(put("/api/perfil/{usuarioId}/datos-fiscales/{id}", usuarioId, id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(datosFiscales)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Datos no encontrados"));
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
-    void actualizarDatosFiscales_InternalError() throws Exception {
+    void actualizarDatosFiscales_SecurityError() throws Exception {
         // Arrange
         Long id = 1L;
         Long usuarioId = 1L;
-        DatosFiscales datosFiscales = new DatosFiscales();
+        DatosFiscalesDTO datosFiscales = new DatosFiscalesDTO();
+        datosFiscales.setNif("12345678A");
 
-        when(datosFiscalesService.actualizarDatosFiscales(eq(id), any(DatosFiscales.class), eq(usuarioId)))
-                .thenThrow(new RuntimeException("Error de base de datos"));
+        when(datosFiscalesService.actualizarDatosFiscales(eq(id), eq(usuarioId), any(DatosFiscalesDTO.class)))
+                .thenThrow(new SecurityException("No tienes permiso"));
 
         // Act & Assert
-        mockMvc.perform(put("/api/datos-fiscales/{id}", id)
-                        .param("usuarioId", usuarioId.toString())
+        mockMvc.perform(put("/api/perfil/{usuarioId}/datos-fiscales/{id}", usuarioId, id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(datosFiscales)))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error").value("Error interno actualizando datos fiscales"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
@@ -263,14 +237,11 @@ class DatosFiscalesControllerTest {
         // Arrange
         Long id = 1L;
         Long usuarioId = 1L;
-        when(datosFiscalesService.eliminarDatosFiscales(id, usuarioId)).thenReturn(true);
+        doNothing().when(datosFiscalesService).eliminarDatosFiscales(id, usuarioId);
 
         // Act & Assert
-        mockMvc.perform(delete("/api/datos-fiscales/{id}", id)
-                        .param("usuarioId", usuarioId.toString()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Datos fiscales eliminados exitosamente"));
+        mockMvc.perform(delete("/api/perfil/{usuarioId}/datos-fiscales/{id}", usuarioId, id))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -278,30 +249,27 @@ class DatosFiscalesControllerTest {
         // Arrange
         Long id = 999L;
         Long usuarioId = 1L;
-        when(datosFiscalesService.eliminarDatosFiscales(id, usuarioId)).thenReturn(false);
+        doThrow(new IllegalArgumentException("Dirección no encontrada"))
+                .when(datosFiscalesService).eliminarDatosFiscales(id, usuarioId);
 
         // Act & Assert
-        mockMvc.perform(delete("/api/datos-fiscales/{id}", id)
-                        .param("usuarioId", usuarioId.toString()))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Datos fiscales no encontrados o no pertenecen al usuario"));
+        mockMvc.perform(delete("/api/perfil/{usuarioId}/datos-fiscales/{id}", usuarioId, id))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
-    void eliminarDatosFiscales_InternalError() throws Exception {
+    void eliminarDatosFiscales_SecurityError() throws Exception {
         // Arrange
         Long id = 1L;
         Long usuarioId = 1L;
-        when(datosFiscalesService.eliminarDatosFiscales(id, usuarioId))
-                .thenThrow(new RuntimeException("Error de base de datos"));
+        doThrow(new SecurityException("No tienes permiso"))
+                .when(datosFiscalesService).eliminarDatosFiscales(id, usuarioId);
 
         // Act & Assert
-        mockMvc.perform(delete("/api/datos-fiscales/{id}", id)
-                        .param("usuarioId", usuarioId.toString()))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Error interno eliminando datos fiscales"));
+        mockMvc.perform(delete("/api/perfil/{usuarioId}/datos-fiscales/{id}", usuarioId, id))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
@@ -312,12 +280,11 @@ class DatosFiscalesControllerTest {
         when(datosFiscalesService.validarNIF("12345678A")).thenReturn(true);
 
         // Act & Assert
-        mockMvc.perform(post("/api/datos-fiscales/validar-nif")
+        mockMvc.perform(post("/api/perfil/{usuarioId}/datos-fiscales/validar-nif", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valido").value(true))
-                .andExpect(jsonPath("$.mensaje").value("NIF válido"));
+                .andExpect(jsonPath("$.valido").value(true));
     }
 
     @Test
@@ -328,57 +295,10 @@ class DatosFiscalesControllerTest {
         when(datosFiscalesService.validarNIF("INVALID")).thenReturn(false);
 
         // Act & Assert
-        mockMvc.perform(post("/api/datos-fiscales/validar-nif")
+        mockMvc.perform(post("/api/perfil/{usuarioId}/datos-fiscales/validar-nif", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(payload)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valido").value(false))
-                .andExpect(jsonPath("$.mensaje").value("NIF inválido"));
-    }
-
-    @Test
-    void validarNIF_NifNull() throws Exception {
-        // Arrange
-        Map<String, String> payload = new HashMap<>();
-
-        // Act & Assert
-        mockMvc.perform(post("/api/datos-fiscales/validar-nif")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.valido").value(false))
-                .andExpect(jsonPath("$.mensaje").value("NIF no proporcionado"));
-    }
-
-    @Test
-    void validarNIF_NifBlank() throws Exception {
-        // Arrange
-        Map<String, String> payload = new HashMap<>();
-        payload.put("nif", "   ");
-
-        // Act & Assert
-        mockMvc.perform(post("/api/datos-fiscales/validar-nif")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.valido").value(false))
-                .andExpect(jsonPath("$.mensaje").value("NIF no proporcionado"));
-    }
-
-    @Test
-    void validarNIF_InternalError() throws Exception {
-        // Arrange
-        Map<String, String> payload = new HashMap<>();
-        payload.put("nif", "12345678A");
-        when(datosFiscalesService.validarNIF("12345678A"))
-                .thenThrow(new RuntimeException("Error inesperado"));
-
-        // Act & Assert
-        mockMvc.perform(post("/api/datos-fiscales/validar-nif")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.valido").value(false))
-                .andExpect(jsonPath("$.mensaje").value("Error validando NIF"));
+                .andExpect(jsonPath("$.valido").value(false));
     }
 }

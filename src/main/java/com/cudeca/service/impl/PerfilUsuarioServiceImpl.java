@@ -1,15 +1,20 @@
 package com.cudeca.service.impl;
 
+import com.cudeca.dto.EntradaUsuarioDTO;
+import com.cudeca.dto.TicketDTO;
 import com.cudeca.dto.UserProfileDTO;
-import com.cudeca.model.negocio.ArticuloCompra;
-import com.cudeca.model.negocio.ArticuloEntrada;
-import com.cudeca.model.negocio.Compra;
-import com.cudeca.model.negocio.Monedero;
+import com.cudeca.model.evento.Asiento;
+import com.cudeca.model.negocio.*;
 import com.cudeca.model.usuario.Rol;
 import com.cudeca.model.usuario.Usuario;
+import com.cudeca.repository.CompraRepository;
+import com.cudeca.repository.EntradaEmitidaRepository;
 import com.cudeca.repository.MonederoRepository;
 import com.cudeca.repository.UsuarioRepository;
+import com.cudeca.service.PdfService;
 import com.cudeca.service.PerfilUsuarioService;
+import com.cudeca.service.QrCodeService;
+import com.cudeca.service.TicketService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -22,7 +27,6 @@ import java.util.*;
 
 /**
  * Implementación del servicio de gestión de perfil de usuario.
- * Maneja consultas y actualizaciones del perfil del usuario.
  */
 @Service
 @Transactional
@@ -33,322 +37,297 @@ public class PerfilUsuarioServiceImpl implements PerfilUsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final MonederoRepository monederoRepository;
-    private final com.cudeca.repository.CompraRepository compraRepository;
+    private final CompraRepository compraRepository;
+    private final EntradaEmitidaRepository entradaEmitidaRepository;
+    private final TicketService ticketService;
+    private final PdfService pdfService;
+    private final QrCodeService qrCodeService;
 
     public PerfilUsuarioServiceImpl(
             UsuarioRepository usuarioRepository,
             MonederoRepository monederoRepository,
-            com.cudeca.repository.CompraRepository compraRepository) {
+            CompraRepository compraRepository,
+            EntradaEmitidaRepository entradaEmitidaRepository,
+            TicketService ticketService,
+            PdfService pdfService,
+            QrCodeService qrCodeService) {
         this.usuarioRepository = usuarioRepository;
         this.monederoRepository = monederoRepository;
         this.compraRepository = compraRepository;
+        this.entradaEmitidaRepository = entradaEmitidaRepository;
+        this.ticketService = ticketService;
+        this.pdfService = pdfService;
+        this.qrCodeService = qrCodeService;
     }
+
+    // --- MÉTODOS DE PERFIL ---
 
     @Override
     @Transactional(readOnly = true)
     public UserProfileDTO obtenerPerfilPorId(Long usuarioId) {
-        log.debug("Obteniendo perfil para usuario ID: {}", usuarioId);
-
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException(USUARIO_NO_ENCONTRADO + usuarioId));
-
         return convertirAPerfilDTO(usuario);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<UserProfileDTO> obtenerPerfilPorEmail(String email) {
-        log.debug("Obteniendo perfil para email: {}", email);
-
-        if (email == null || email.isBlank()) {
-            return Optional.empty();
-        }
-
-        return usuarioRepository.findByEmail(email)
-                .map(this::convertirAPerfilDTO);
+        if (email == null || email.isBlank()) return Optional.empty();
+        return usuarioRepository.findByEmail(email).map(this::convertirAPerfilDTO);
     }
 
     @Override
     public UserProfileDTO actualizarPerfil(Long usuarioId, String nombre, String direccion) {
-        log.info("Actualizando perfil para usuario ID: {}", usuarioId);
-
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException(USUARIO_NO_ENCONTRADO + usuarioId));
 
-        // Validar y actualizar campos
         if (nombre != null && !nombre.isBlank()) {
-            if (nombre.length() > 100) {
-                throw new IllegalArgumentException("El nombre no puede exceder 100 caracteres");
-            }
+            if (nombre.length() > 100) throw new IllegalArgumentException("El nombre no puede exceder 100 caracteres");
             usuario.setNombre(nombre);
-            log.debug("Nombre actualizado a: {}", nombre);
         }
-
         if (direccion != null) {
             usuario.setDireccion(direccion);
-            log.debug("Dirección actualizada");
         }
 
-        // Guardar cambios
-        Usuario actualizado = usuarioRepository.save(usuario);
-        log.info("Perfil actualizado para usuario ID: {}", usuarioId);
-
-        return convertirAPerfilDTO(actualizado);
+        return convertirAPerfilDTO(usuarioRepository.save(usuario));
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Usuario> obtenerUsuarioPorId(Long usuarioId) {
-        log.debug("Obteniendo usuario por ID: {}", usuarioId);
         return usuarioRepository.findById(usuarioId);
     }
 
     @Override
-    public UserProfileDTO convertirAPerfilDTO(Usuario usuario) {
-        return crearPerfilDTODesdeUsuario(usuario);
+    public boolean existeUsuario(Long usuarioId) {
+        return usuarioRepository.existsById(usuarioId);
     }
 
-    /**
-     * Método privado para crear DTO desde Usuario (evita warnings de transacciones).
-     */
-    private UserProfileDTO crearPerfilDTODesdeUsuario(Usuario usuario) {
-        if (usuario == null) {
-            return null;
-        }
+    // --- CONVERSORES Y DTOs ---
 
+    @Override
+    public UserProfileDTO convertirAPerfilDTO(Usuario usuario) {
+        if (usuario == null) return null;
         UserProfileDTO dto = new UserProfileDTO();
         dto.setId(usuario.getId());
         dto.setNombre(usuario.getNombre());
         dto.setEmail(usuario.getEmail());
         dto.setDireccion(usuario.getDireccion());
 
-        // Obtener rol principal (el primero si tiene varios)
-        String rol = usuario.getRoles().stream()
-                .findFirst()
-                .map(Rol::getNombre)
-                .orElse("COMPRADOR");
+        String rol = usuario.getRoles().stream().findFirst().map(Rol::getNombre).orElse("COMPRADOR");
         dto.setRol(rol);
 
-        // Obtener saldo del monedero si el usuario es Comprador
-        BigDecimal saldo = obtenerSaldoMonedero(usuario);
-        dto.setSaldoMonedero(saldo);
-
+        dto.setSaldoMonedero(obtenerSaldoMonedero(usuario));
         return dto;
     }
 
+    private BigDecimal obtenerSaldoMonedero(Usuario usuario) {
+        return monederoRepository.findByUsuario_Id(usuario.getId())
+                .map(Monedero::getSaldo)
+                .orElse(BigDecimal.ZERO);
+    }
 
+    // --- HISTORIAL DE COMPRAS ---
+
+    @Override
     @Transactional(readOnly = true)
     public List<Map<String, Object>> obtenerHistorialCompras(Long usuarioId) {
-        log.debug("Generando historial de compras para usuario ID: {}", usuarioId);
-
         if (!usuarioRepository.existsById(usuarioId)) {
             throw new IllegalArgumentException(USUARIO_NO_ENCONTRADO + usuarioId);
         }
 
-        // 1. Buscamos las compras reales en BD
         List<Compra> compras = compraRepository.findByUsuario_Id(usuarioId);
 
-        // 2. Las convertimos al formato que espera el Frontend
-        return compras.stream().map(compra -> {
+        return compras.stream().sorted(Comparator.comparing(Compra::getFecha).reversed()).map(compra -> {
             Map<String, Object> dto = new HashMap<>();
             dto.put("id", compra.getId().toString());
 
-            // Formatear fecha (ej: 15 de Noviembre, 2024)
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd 'de' MMMM, yyyy", new Locale("es", "ES"));
             dto.put("date", compra.getFecha().atZoneSameInstant(ZoneId.systemDefault()).format(formatter));
+            dto.put("status", compra.getEstado().name());
 
-            dto.put("status", compra.getEstado().name()); // COMPLETADA, PENDIENTE...
-
-            // Calcular total
             BigDecimal total = compra.getArticulos().stream()
                     .map(a -> a.getPrecioUnitario().multiply(new BigDecimal(a.getCantidad())))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             dto.put("total", total + "€");
 
-            // Buscar nombre del evento y contar entradas
             String titulo = "Compra General";
             int numEntradas = 0;
-
             for (ArticuloCompra art : compra.getArticulos()) {
-                if (art instanceof ArticuloEntrada) {
-                    ArticuloEntrada ent = (ArticuloEntrada) art;
+                if (art instanceof ArticuloEntrada ent) {
                     numEntradas += ent.getCantidad();
-                    // Cogemos el nombre del primer evento que encontremos
                     if (ent.getTipoEntrada() != null && ent.getTipoEntrada().getEvento() != null) {
                         titulo = ent.getTipoEntrada().getEvento().getNombre();
                     }
                 }
             }
-
             dto.put("title", titulo);
             dto.put("tickets", numEntradas + " entradas");
-
             return dto;
         }).toList();
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existeUsuario(Long usuarioId) {
-        log.debug("Verificando existencia de usuario ID: {}", usuarioId);
-        return usuarioRepository.existsById(usuarioId);
-    }
-
-    // --- MÉTODOS PRIVADOS DE APOYO ---
-
-    private BigDecimal obtenerSaldoMonedero(Usuario usuario) {
-        try {
-            // Buscar el monedero del usuario por su ID
-            Optional<Monedero> monedero = monederoRepository.findByUsuario_Id(usuario.getId());
-            if (monedero.isPresent()) {
-                return monedero.get().getSaldo();
-            }
-        } catch (Exception e) {
-            if (log.isWarnEnabled()) {
-                log.warn("Error al obtener saldo del monedero para usuario ID: {}", usuario.getId(), e);
-            }
-        }
-
-        return BigDecimal.ZERO;
-    }
-
-    // --- MÉTODOS PARA ENTRADAS Y TICKETS ---
+    // --- GESTIÓN DE ENTRADAS (Fixed) ---
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.List<com.cudeca.model.negocio.EntradaEmitida> obtenerEntradasUsuario(Long usuarioId) {
-        log.debug("Obteniendo entradas para usuario ID: {}", usuarioId);
-
-        // Verificar que el usuario existe
+    public List<EntradaUsuarioDTO> obtenerEntradasUsuario(Long usuarioId) {
         if (!usuarioRepository.existsById(usuarioId)) {
             throw new IllegalArgumentException(USUARIO_NO_ENCONTRADO + usuarioId);
         }
 
-        // Obtener todas las compras del usuario usando el repositorio
-        java.util.List<com.cudeca.model.negocio.Compra> compras = compraRepository.findByUsuario_Id(usuarioId);
+        List<Compra> compras = compraRepository.findByUsuario_Id(usuarioId);
 
-        // Extraer las entradas de los artículos de tipo ArticuloEntrada
         return compras.stream()
                 .flatMap(compra -> compra.getArticulos().stream())
-                .filter(articulo -> articulo instanceof com.cudeca.model.negocio.ArticuloEntrada)
-                .map(articulo -> (com.cudeca.model.negocio.ArticuloEntrada) articulo)
+                .filter(articulo -> articulo instanceof ArticuloEntrada)
+                .map(articulo -> (ArticuloEntrada) articulo)
                 .flatMap(articuloEntrada -> articuloEntrada.getEntradasEmitidas().stream())
-                .sorted((e1, e2) -> e2.getId().compareTo(e1.getId())) // Más recientes primero
+                .sorted((e1, e2) -> e2.getId().compareTo(e1.getId()))
+                .map(this::convertirAEntradaDTO)
                 .toList();
     }
+
+    private EntradaUsuarioDTO convertirAEntradaDTO(EntradaEmitida entrada) {
+        var articulo = entrada.getArticuloEntrada();
+        var evento = articulo.getTipoEntrada().getEvento();
+        Asiento asiento = articulo.getAsiento();
+
+        String asientoTexto;
+        if (asiento != null) {
+            asientoTexto = "Fila " + asiento.getFila() + " - " + asiento.getCodigoEtiqueta();
+        } else {
+            asientoTexto = articulo.getTipoEntrada().getNombre();
+        }
+
+        return EntradaUsuarioDTO.builder()
+                .id(entrada.getId())
+                .codigoQR(entrada.getCodigoQR())
+                .estadoEntrada(entrada.getEstado().name())
+                .eventoNombre(evento.getNombre())
+                .fechaEvento(evento.getFechaInicio().toString())
+                .fechaEmision(articulo.getCompra().getFecha().toString())
+                .asientoNumero(asientoTexto)
+                .build();
+    }
+
+    // --- GENERACIÓN DE PDF (Fixed) ---
 
     @Override
     @Transactional(readOnly = true)
     public byte[] generarPDFEntrada(Long entradaId, Long usuarioId) {
-        log.info("Generando PDF para entrada ID: {} del usuario ID: {}", entradaId, usuarioId);
+        log.info("Generando PDF REAL para entrada ID: {} del usuario ID: {}", entradaId, usuarioId);
 
-        // Verificar que el usuario existe
-        if (!usuarioRepository.existsById(usuarioId)) {
-            throw new IllegalArgumentException(USUARIO_NO_ENCONTRADO + usuarioId);
+        EntradaEmitida entrada = entradaEmitidaRepository.findById(entradaId)
+                .orElseThrow(() -> new IllegalArgumentException("Entrada no encontrada: " + entradaId));
+
+        Long compradorId = entrada.getArticuloEntrada().getCompra().getUsuario().getId();
+        if (!compradorId.equals(usuarioId)) {
+            throw new SecurityException("Acceso denegado: Esta entrada no pertenece al usuario.");
         }
 
-        // Obtener las entradas del usuario
-        java.util.List<com.cudeca.model.negocio.EntradaEmitida> entradas = obtenerEntradasUsuario(usuarioId);
+        // Mapear a TicketDTO
+        TicketDTO ticketDTO = mapearEntradaADTO(entrada);
 
-        // Verificar que la entrada existe y pertenece al usuario
-        com.cudeca.model.negocio.EntradaEmitida entrada = entradas.stream()
-                .filter(e -> e.getId().equals(entradaId))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Entrada no encontrada o no pertenece al usuario: " + entradaId));
-
-        // TODO: Implementar generación real de PDF con iText o similar
-        // Por ahora, retornamos un PDF simulado con información básica
-        String contenidoPDF = generarContenidoPDFSimulado(entrada);
-
-        log.info("PDF generado exitosamente para entrada ID: {}", entradaId);
-        return contenidoPDF.getBytes(java.nio.charset.StandardCharsets.UTF_8);
-    }
-
-    /**
-     * Genera contenido simulado de PDF (placeholder hasta implementar librería PDF real).
-     */
-    private String generarContenidoPDFSimulado(com.cudeca.model.negocio.EntradaEmitida entrada) {
-        StringBuilder pdf = new StringBuilder();
-        pdf.append("========================================\n");
-        pdf.append("         ENTRADA - CUDECA EVENT          \n");
-        pdf.append("========================================\n\n");
-        pdf.append("ID Entrada: ").append(entrada.getId()).append("\n");
-        pdf.append("Código QR: ").append(entrada.getCodigoQR()).append("\n");
-        pdf.append("Estado: ").append(entrada.getEstado()).append("\n\n");
-
-        // Información del asiento a través del artículo de entrada
-        if (entrada.getArticuloEntrada() != null && entrada.getArticuloEntrada().getAsiento() != null) {
-            com.cudeca.model.evento.Asiento asiento = entrada.getArticuloEntrada().getAsiento();
-            pdf.append("--- INFORMACIÓN DEL ASIENTO ---\n");
-            pdf.append("Código: ").append(asiento.getCodigoEtiqueta()).append("\n");
-            if (asiento.getFila() != null) {
-                pdf.append("Fila: ").append(asiento.getFila()).append("\n");
-            }
-            if (asiento.getColumna() != null) {
-                pdf.append("Columna: ").append(asiento.getColumna()).append("\n");
-            }
-
-            // Información de la zona
-            if (asiento.getZona() != null) {
-                pdf.append("Zona: ").append(asiento.getZona().getNombre()).append("\n");
-
-                // Información del evento
-                if (asiento.getZona().getEvento() != null) {
-                    com.cudeca.model.evento.Evento evento = asiento.getZona().getEvento();
-                    pdf.append("\n--- INFORMACIÓN DEL EVENTO ---\n");
-                    pdf.append("Evento: ").append(evento.getNombre()).append("\n");
-                    if (evento.getDescripcion() != null) {
-                        pdf.append("Descripción: ").append(evento.getDescripcion()).append("\n");
-                    }
-                    pdf.append("Fecha: ").append(evento.getFechaInicio()).append("\n");
-                }
-            }
+        // Usar el servicio de tickets real dentro de un try-catch
+        try {
+            return ticketService.generarTicketPdf(ticketDTO);
+        } catch (Exception e) {
+            log.error("Error generando PDF para entrada {}", entradaId, e);
+            throw new RuntimeException("Error interno al generar el PDF del ticket", e);
         }
-
-        pdf.append("\n========================================\n");
-        pdf.append("   Conserve esta entrada para el evento  \n");
-        pdf.append("========================================\n");
-
-        return pdf.toString();
     }
 
-    // --- MÉTODOS PARA MONEDERO ---
+    private TicketDTO mapearEntradaADTO(EntradaEmitida entrada) {
+        var articulo = entrada.getArticuloEntrada();
+        var compra = articulo.getCompra();
+        var evento = articulo.getTipoEntrada().getEvento();
+        var usuario = compra.getUsuario();
+
+        String nombreUser = (usuario != null) ? usuario.getNombre() : "Invitado";
+        String emailUser = (usuario != null) ? usuario.getEmail() : compra.getEmailContacto();
+
+        return TicketDTO.builder()
+                .nombreEvento(evento.getNombre())
+                .lugarEvento(evento.getLugar())
+                .fechaEventoFormato(evento.getFechaInicio().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")))
+                .descripcionEvento(evento.getDescripcion())
+                .nombreUsuario(nombreUser)
+                .emailUsuario(emailUser)
+                .codigoAsiento(articulo.getAsiento() != null ? articulo.getAsiento().getCodigoEtiqueta() : "General")
+                .fila(articulo.getAsiento() != null ? articulo.getAsiento().getFila() : null)
+                .columna(articulo.getAsiento() != null ? articulo.getAsiento().getColumna() : null)
+                .zonaRecinto(articulo.getAsiento() != null ? articulo.getAsiento().getZona().getNombre() : "General")
+                .codigoQR(entrada.getCodigoQR())
+                .tipoEntrada(articulo.getTipoEntrada().getNombre())
+                .precio(articulo.getPrecioUnitario() + "€")
+                .build();
+    }
 
     @Override
     @Transactional(readOnly = true)
-    public com.cudeca.model.negocio.Monedero obtenerMonedero(Long usuarioId) {
-        log.debug("Obteniendo monedero para usuario ID: {}", usuarioId);
+    public byte[] generarResumenCompraPdf(Long compraId, Long usuarioId) {
+        log.info("Generando PDF de resumen de compra ID: {} para usuario ID: {}", compraId, usuarioId);
 
-        // Validar que el usuario existe
+        // 1. Validar Compra
+        Compra compra = compraRepository.findById(compraId)
+                .orElseThrow(() -> new IllegalArgumentException("Compra no encontrada: " + compraId));
+
+        if (!compra.getUsuario().getId().equals(usuarioId)) {
+            throw new SecurityException("No tienes permiso para ver esta compra");
+        }
+
+        // 2. Obtener todas las entradas asociadas a esta compra usando el nuevo método del repositorio
+        List<EntradaEmitida> entradasEntidad = entradaEmitidaRepository.findByCompraId(compraId);
+
+        if (entradasEntidad.isEmpty()) {
+            // Opcional: Si es una donación pura sin entradas, podrías querer manejarlo diferente,
+            // pero el PdfService debería ser capaz de pintar solo la factura.
+            log.info("La compra {} no tiene entradas asociadas (posiblemente solo donaciones).", compraId);
+        }
+
+        // 3. Preparar datos para el PDF
+        List<TicketDTO> ticketsDTO = new ArrayList<>();
+        List<byte[]> codigosQR = new ArrayList<>();
+
+        for (EntradaEmitida entrada : entradasEntidad) {
+            ticketsDTO.add(mapearEntradaADTO(entrada));
+            try {
+                // Generamos el QR en memoria para incrustarlo en el PDF
+                codigosQR.add(qrCodeService.generarCodigoQR(entrada.getCodigoQR()));
+            } catch (Exception e) {
+                log.error("Error generando QR para entrada {}", entrada.getId(), e);
+                throw new RuntimeException("Error interno generando códigos QR", e);
+            }
+        }
+
+        // 4. Generar PDF Combinado (Factura + Entradas)
+        try {
+            return pdfService.generarPdfCompraCompleta(compra, ticketsDTO, codigosQR);
+        } catch (Exception e) {
+            log.error("Error generando PDF de compra completa", e);
+            throw new RuntimeException("Error al generar el documento PDF", e);
+        }
+    }
+
+    // --- MONEDERO ---
+
+    @Override
+    @Transactional(readOnly = true)
+    public Monedero obtenerMonedero(Long usuarioId) {
         usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new IllegalArgumentException(USUARIO_NO_ENCONTRADO + usuarioId));
-
         return monederoRepository.findByUsuario_Id(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "El usuario no tiene monedero configurado: " + usuarioId));
+                .orElseThrow(() -> new IllegalArgumentException("El usuario no tiene monedero configurado"));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.List<com.cudeca.model.negocio.MovimientoMonedero> obtenerMovimientosMonedero(Long usuarioId) {
-        log.debug("Obteniendo movimientos del monedero para usuario ID: {}", usuarioId);
-
-        // Primero obtener el monedero (esto valida que el usuario existe y es comprador)
-        com.cudeca.model.negocio.Monedero monedero = obtenerMonedero(usuarioId);
-
-        // Obtener los movimientos ordenados por fecha descendente (más recientes primero)
-        java.util.List<com.cudeca.model.negocio.MovimientoMonedero> movimientos =
-                new java.util.ArrayList<>(monedero.getMovimientos());
-
-        movimientos.sort((m1, m2) -> m2.getFecha().compareTo(m1.getFecha()));
-
-        if (log.isDebugEnabled()) {
-            log.debug("Se encontraron {} movimientos para el monedero del usuario ID: {}",
-                    movimientos.size(), usuarioId);
-        }
-
+    public List<MovimientoMonedero> obtenerMovimientosMonedero(Long usuarioId) {
+        Monedero monedero = obtenerMonedero(usuarioId);
+        List<MovimientoMonedero> movimientos = new ArrayList<>(monedero.getMovimientos());
+        movimientos.sort(Comparator.comparing(MovimientoMonedero::getFecha).reversed());
         return movimientos;
     }
 }
-

@@ -1,9 +1,10 @@
 package com.cudeca.service.impl;
 
+import com.cudeca.dto.EntradaUsuarioDTO;
 import com.cudeca.dto.UserProfileDTO;
 import com.cudeca.model.negocio.Monedero;
-import com.cudeca.model.usuario.Usuario;
 import com.cudeca.model.usuario.Rol;
+import com.cudeca.model.usuario.Usuario;
 import com.cudeca.repository.MonederoRepository;
 import com.cudeca.repository.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,10 +17,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
@@ -40,6 +43,18 @@ class PerfilUsuarioServiceImplTest {
 
     @Mock
     private com.cudeca.repository.CompraRepository compraRepository;
+
+    @Mock
+    private com.cudeca.repository.EntradaEmitidaRepository entradaEmitidaRepository;
+
+    @Mock
+    private com.cudeca.service.TicketService ticketService;
+
+    @Mock
+    private com.cudeca.service.PdfService pdfService;
+
+    @Mock
+    private com.cudeca.service.QrCodeService qrCodeService;
 
     @InjectMocks
     private PerfilUsuarioServiceImpl perfilUsuarioService;
@@ -209,8 +224,8 @@ class PerfilUsuarioServiceImplTest {
         // Assert
         assertThat(resultado).isNotNull();
         verify(usuarioRepository).save(argThat(u ->
-            u.getNombre().equals("Nuevo Nombre") &&
-            u.getDireccion() != null  // No debería cambiar
+                u.getNombre().equals("Nuevo Nombre") &&
+                        u.getDireccion() != null  // No debería cambiar
         ));
     }
 
@@ -232,7 +247,7 @@ class PerfilUsuarioServiceImplTest {
         // Assert
         assertThat(resultado).isNotNull();
         verify(usuarioRepository).save(argThat(u ->
-            u.getDireccion().equals("Nueva Dirección")
+                u.getDireccion().equals("Nueva Dirección")
         ));
     }
 
@@ -245,10 +260,10 @@ class PerfilUsuarioServiceImplTest {
 
         // Act & Assert
         assertThatThrownBy(() ->
-            perfilUsuarioService.actualizarPerfil(1L, nombreLargo, null)
+                perfilUsuarioService.actualizarPerfil(1L, nombreLargo, null)
         )
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("nombre no puede exceder 100 caracteres");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("nombre no puede exceder 100 caracteres");
 
         verify(usuarioRepository, never()).save(any());
     }
@@ -267,7 +282,7 @@ class PerfilUsuarioServiceImplTest {
         // Assert
         // El nombre no debería cambiar si es blank
         verify(usuarioRepository).save(argThat(u ->
-            !u.getNombre().isBlank()
+                !u.getNombre().isBlank()
         ));
     }
 
@@ -279,10 +294,10 @@ class PerfilUsuarioServiceImplTest {
 
         // Act & Assert
         assertThatThrownBy(() ->
-            perfilUsuarioService.actualizarPerfil(999L, "Nombre", "Dirección")
+                perfilUsuarioService.actualizarPerfil(999L, "Nombre", "Dirección")
         )
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("Usuario no encontrado");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Usuario no encontrado");
 
         verify(usuarioRepository, never()).save(any());
     }
@@ -419,21 +434,17 @@ class PerfilUsuarioServiceImplTest {
     }
 
     @Test
-    @DisplayName("Debe manejar errores al obtener monedero sin fallar")
+    @DisplayName("Debe propagar error en consulta de monedero")
     void testObtenerPerfilPorId_ErrorMonedero() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
         when(monederoRepository.findByUsuario_Id(1L))
                 .thenThrow(new RuntimeException("Error de BD"));
 
-        // Act
-        UserProfileDTO resultado = perfilUsuarioService.obtenerPerfilPorId(1L);
-
-        // Assert
-        assertThat(resultado).isNotNull();
-        // Debe retornar el perfil aunque falle el monedero
-        assertThat(resultado.getId()).isEqualTo(1L);
-        assertThat(resultado.getSaldoMonedero()).isEqualByComparingTo(BigDecimal.ZERO);
+        // Act & Assert
+        assertThatThrownBy(() -> perfilUsuarioService.obtenerPerfilPorId(1L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Error de BD");
     }
 
     @Test
@@ -451,7 +462,7 @@ class PerfilUsuarioServiceImplTest {
         // Assert
         assertThat(resultado).isNotNull();
         verify(usuarioRepository).save(argThat(u ->
-            u.getNombre().length() == 100
+                u.getNombre().length() == 100
         ));
     }
 
@@ -469,7 +480,7 @@ class PerfilUsuarioServiceImplTest {
         // Assert
         assertThat(resultado).isNotNull();
         verify(usuarioRepository).save(argThat(u ->
-            u.getDireccion().isEmpty()
+                u.getDireccion().isEmpty()
         ));
     }
 
@@ -498,8 +509,8 @@ class PerfilUsuarioServiceImplTest {
 
         // Act & Assert
         assertThatThrownBy(() -> perfilUsuarioService.obtenerEntradasUsuario(999L))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Usuario no encontrado");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Usuario no encontrado");
     }
 
     @Test
@@ -526,8 +537,8 @@ class PerfilUsuarioServiceImplTest {
 
         // Act & Assert
         assertThatThrownBy(() -> perfilUsuarioService.obtenerMonedero(999L))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Usuario no encontrado");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Usuario no encontrado");
     }
 
     @Test
@@ -539,8 +550,8 @@ class PerfilUsuarioServiceImplTest {
 
         // Act & Assert
         assertThatThrownBy(() -> perfilUsuarioService.obtenerMonedero(1L))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("no tiene monedero configurado");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("no tiene monedero configurado");
     }
 
     @Test
@@ -568,33 +579,32 @@ class PerfilUsuarioServiceImplTest {
 
         // Act & Assert
         assertThatThrownBy(() -> perfilUsuarioService.obtenerMovimientosMonedero(1L))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("no tiene monedero configurado");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("no tiene monedero configurado");
     }
 
     @Test
     @DisplayName("Debe generar PDF de entrada con contenido básico")
     void testGenerarPDFEntrada_UsuarioSinEntradas() {
         // Arrange
-        when(usuarioRepository.existsById(1L)).thenReturn(true);
-        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.Collections.emptyList());
+        when(entradaEmitidaRepository.findById(999L)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThatThrownBy(() -> perfilUsuarioService.generarPDFEntrada(999L, 1L))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Entrada no encontrada o no pertenece al usuario");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Entrada no encontrada");
     }
 
     @Test
     @DisplayName("Debe lanzar excepción al generar PDF para usuario inexistente")
     void testGenerarPDFEntrada_UsuarioNoExiste() {
         // Arrange
-        when(usuarioRepository.existsById(999L)).thenReturn(false);
+        when(entradaEmitidaRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThatThrownBy(() -> perfilUsuarioService.generarPDFEntrada(1L, 999L))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Usuario no encontrado");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Entrada no encontrada");
     }
 
     @Test
@@ -602,13 +612,13 @@ class PerfilUsuarioServiceImplTest {
     void testObtenerMovimientosMonedero_Ordenados() {
         // Arrange
         when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-        
+
         // Crear monedero con múltiples movimientos con fechas diferentes
         Monedero monederoConMovimientos = new Monedero();
         monederoConMovimientos.setId(1L);
         monederoConMovimientos.setSaldo(BigDecimal.valueOf(150.00));
         monederoConMovimientos.setUsuario(usuario);
-        
+
         com.cudeca.model.negocio.MovimientoMonedero mov1 = com.cudeca.model.negocio.MovimientoMonedero.builder()
                 .id(1L)
                 .importe(BigDecimal.valueOf(50.00))
@@ -616,7 +626,7 @@ class PerfilUsuarioServiceImplTest {
                 .tipo(com.cudeca.model.enums.TipoMovimiento.ABONO)
                 .monedero(monederoConMovimientos)
                 .build();
-        
+
         com.cudeca.model.negocio.MovimientoMonedero mov2 = com.cudeca.model.negocio.MovimientoMonedero.builder()
                 .id(2L)
                 .importe(BigDecimal.valueOf(25.00))
@@ -624,7 +634,7 @@ class PerfilUsuarioServiceImplTest {
                 .tipo(com.cudeca.model.enums.TipoMovimiento.CARGO)
                 .monedero(monederoConMovimientos)
                 .build();
-        
+
         com.cudeca.model.negocio.MovimientoMonedero mov3 = com.cudeca.model.negocio.MovimientoMonedero.builder()
                 .id(3L)
                 .importe(BigDecimal.valueOf(100.00))
@@ -632,15 +642,15 @@ class PerfilUsuarioServiceImplTest {
                 .tipo(com.cudeca.model.enums.TipoMovimiento.ABONO)
                 .monedero(monederoConMovimientos)
                 .build();
-        
+
         // Agregar movimientos en orden aleatorio
         monederoConMovimientos.setMovimientos(java.util.Arrays.asList(mov1, mov3, mov2));
-        
+
         when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monederoConMovimientos));
-        
+
         // Act
         var movimientos = perfilUsuarioService.obtenerMovimientosMonedero(1L);
-        
+
         // Assert
         assertThat(movimientos).hasSize(3);
         // Verificar orden descendente por fecha (más reciente primero)
@@ -656,15 +666,35 @@ class PerfilUsuarioServiceImplTest {
         // Arrange
         when(usuarioRepository.existsById(1L)).thenReturn(true);
 
+        // Crear evento y tipo de entrada
+        com.cudeca.model.evento.Evento evento = new com.cudeca.model.evento.Evento();
+        evento.setId(1L);
+        evento.setNombre("Concierto CUDECA");
+        evento.setFechaInicio(java.time.OffsetDateTime.now());
+
+        com.cudeca.model.evento.TipoEntrada tipoEntrada1 = new com.cudeca.model.evento.TipoEntrada();
+        tipoEntrada1.setId(1L);
+        tipoEntrada1.setNombre("General");
+        tipoEntrada1.setEvento(evento);
+
+        com.cudeca.model.evento.TipoEntrada tipoEntrada2 = new com.cudeca.model.evento.TipoEntrada();
+        tipoEntrada2.setId(2L);
+        tipoEntrada2.setNombre("VIP");
+        tipoEntrada2.setEvento(evento);
+
         // Crear compras con artículos mixtos
         com.cudeca.model.negocio.Compra compra1 = new com.cudeca.model.negocio.Compra();
         compra1.setId(1L);
+        compra1.setFecha(java.time.OffsetDateTime.of(2025, 1, 10, 10, 0, 0, 0, java.time.ZoneOffset.UTC));
 
         com.cudeca.model.negocio.ArticuloEntrada articuloEntrada1 = new com.cudeca.model.negocio.ArticuloEntrada();
         articuloEntrada1.setId(1L);
+        articuloEntrada1.setTipoEntrada(tipoEntrada1);
+        articuloEntrada1.setCompra(compra1);
 
         com.cudeca.model.negocio.EntradaEmitida entrada1 = new com.cudeca.model.negocio.EntradaEmitida();
         entrada1.setId(10L);
+        entrada1.setEstado(com.cudeca.model.enums.EstadoEntrada.VALIDA);
         entrada1.setArticuloEntrada(articuloEntrada1);
         articuloEntrada1.setEntradasEmitidas(java.util.List.of(entrada1));
 
@@ -676,12 +706,16 @@ class PerfilUsuarioServiceImplTest {
         // Segunda compra con entrada más reciente
         com.cudeca.model.negocio.Compra compra2 = new com.cudeca.model.negocio.Compra();
         compra2.setId(2L);
+        compra2.setFecha(java.time.OffsetDateTime.of(2025, 2, 15, 14, 0, 0, 0, java.time.ZoneOffset.UTC));
 
         com.cudeca.model.negocio.ArticuloEntrada articuloEntrada2 = new com.cudeca.model.negocio.ArticuloEntrada();
         articuloEntrada2.setId(3L);
+        articuloEntrada2.setTipoEntrada(tipoEntrada2);
+        articuloEntrada2.setCompra(compra2);
 
         com.cudeca.model.negocio.EntradaEmitida entrada2 = new com.cudeca.model.negocio.EntradaEmitida();
         entrada2.setId(20L);
+        entrada2.setEstado(com.cudeca.model.enums.EstadoEntrada.VALIDA);
         entrada2.setArticuloEntrada(articuloEntrada2);
         articuloEntrada2.setEntradasEmitidas(java.util.List.of(entrada2));
 
@@ -690,8 +724,8 @@ class PerfilUsuarioServiceImplTest {
         when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra1, compra2));
 
         // Act
-        java.util.List<com.cudeca.model.negocio.EntradaEmitida> entradas = 
-            perfilUsuarioService.obtenerEntradasUsuario(1L);
+        List<EntradaUsuarioDTO> entradas =
+                perfilUsuarioService.obtenerEntradasUsuario(1L);
 
         // Assert
         assertThat(entradas).hasSize(2);
@@ -702,15 +736,246 @@ class PerfilUsuarioServiceImplTest {
 
     @Test
     @DisplayName("Debe generar PDF con toda la información del asiento y evento")
-    void testGenerarPDFEntrada_ConInformacionCompleta() {
+    void testGenerarPDFEntrada_ConInformacionCompleta() throws Exception {
         // Arrange
-        when(usuarioRepository.existsById(1L)).thenReturn(true);
-
         // Crear estructura completa: Entrada -> Artículo -> Asiento -> Zona -> Evento
         com.cudeca.model.evento.Evento evento = new com.cudeca.model.evento.Evento();
         evento.setId(1L);
         evento.setNombre("Concierto Benéfico");
         evento.setDescripcion("Un evento especial para recaudar fondos");
+        evento.setFechaInicio(java.time.OffsetDateTime.now());
+        evento.setLugar("Teatro Principal");
+
+        com.cudeca.model.evento.ZonaRecinto zona = new com.cudeca.model.evento.ZonaRecinto();
+        zona.setId(1L);
+        zona.setNombre("Zona VIP");
+        zona.setEvento(evento);
+
+        com.cudeca.model.evento.Asiento asiento = new com.cudeca.model.evento.Asiento();
+        asiento.setId(1L);
+        asiento.setCodigoEtiqueta("A-12");
+        asiento.setFila(1);
+        asiento.setColumna(12);
+        asiento.setZona(zona);
+
+        com.cudeca.model.evento.TipoEntrada tipoEntrada = new com.cudeca.model.evento.TipoEntrada();
+        tipoEntrada.setId(1L);
+        tipoEntrada.setNombre("VIP");
+        tipoEntrada.setEvento(evento);
+
+        com.cudeca.model.usuario.Usuario usuario = new com.cudeca.model.usuario.Usuario();
+        usuario.setId(1L);
+        usuario.setNombre("Juan Pérez");
+        usuario.setEmail("juan@example.com");
+
+        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
+        compra.setId(1L);
+        compra.setUsuario(usuario);
+        compra.setEmailContacto("juan@example.com");
+
+        com.cudeca.model.negocio.ArticuloEntrada articulo = new com.cudeca.model.negocio.ArticuloEntrada();
+        articulo.setId(1L);
+        articulo.setAsiento(asiento);
+        articulo.setTipoEntrada(tipoEntrada);
+        articulo.setCompra(compra);
+        articulo.setPrecioUnitario(BigDecimal.valueOf(50.00));
+
+        com.cudeca.model.negocio.EntradaEmitida entrada = new com.cudeca.model.negocio.EntradaEmitida();
+        entrada.setId(100L);
+        entrada.setCodigoQR("QR-12345");
+        entrada.setEstado(com.cudeca.model.enums.EstadoEntrada.VALIDA);
+        entrada.setArticuloEntrada(articulo);
+
+        articulo.setEntradasEmitidas(java.util.List.of(entrada));
+        compra.setArticulos(java.util.List.of(articulo));
+
+        when(entradaEmitidaRepository.findById(100L)).thenReturn(Optional.of(entrada));
+        when(ticketService.generarTicketPdf(any())).thenAnswer(invocation -> "PDF Content".getBytes());
+
+        // Act
+        byte[] pdf = perfilUsuarioService.generarPDFEntrada(100L, 1L);
+
+        // Assert
+        assertThat(pdf).isNotNull();
+        assertThat(pdf).isEqualTo("PDF Content".getBytes());
+        
+        // Verificar que se llamó a ticketService con los datos correctos
+        verify(ticketService).generarTicketPdf(argThat(ticketDTO -> 
+            ticketDTO.getNombreEvento().equals("Concierto Benéfico") &&
+            ticketDTO.getCodigoAsiento().equals("A-12") &&
+            ticketDTO.getFila().equals(1) &&
+            ticketDTO.getColumna().equals(12)
+        ));
+    }
+
+    @Test
+    @DisplayName("Debe generar PDF sin asiento")
+    void testGenerarPDFEntrada_SinAsiento() throws Exception {
+        // Arrange
+        com.cudeca.model.evento.Evento evento = new com.cudeca.model.evento.Evento();
+        evento.setId(1L);
+        evento.setNombre("Concierto Sin Asiento");
+        evento.setLugar("Plaza Central");
+        evento.setFechaInicio(java.time.OffsetDateTime.now());
+
+        com.cudeca.model.evento.TipoEntrada tipoEntrada = new com.cudeca.model.evento.TipoEntrada();
+        tipoEntrada.setId(1L);
+        tipoEntrada.setNombre("General");
+        tipoEntrada.setEvento(evento);
+
+        com.cudeca.model.usuario.Usuario usuario = new com.cudeca.model.usuario.Usuario();
+        usuario.setId(1L);
+        usuario.setNombre("Juan Pérez");
+        usuario.setEmail("juan@example.com");
+
+        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
+        compra.setId(1L);
+        compra.setUsuario(usuario);
+        compra.setEmailContacto("juan@example.com");
+
+        com.cudeca.model.negocio.ArticuloEntrada articulo = new com.cudeca.model.negocio.ArticuloEntrada();
+        articulo.setId(1L);
+        articulo.setAsiento(null);
+        articulo.setTipoEntrada(tipoEntrada);
+        articulo.setCompra(compra);
+        articulo.setPrecioUnitario(BigDecimal.valueOf(50.00));
+
+        com.cudeca.model.negocio.EntradaEmitida entrada = new com.cudeca.model.negocio.EntradaEmitida();
+        entrada.setId(100L);
+        entrada.setCodigoQR("QR-12345");
+        entrada.setEstado(com.cudeca.model.enums.EstadoEntrada.VALIDA);
+        entrada.setArticuloEntrada(articulo);
+
+        articulo.setEntradasEmitidas(java.util.List.of(entrada));
+        compra.setArticulos(java.util.List.of(articulo));
+
+        when(entradaEmitidaRepository.findById(100L)).thenReturn(Optional.of(entrada));
+        when(ticketService.generarTicketPdf(any())).thenAnswer(invocation -> "PDF Content".getBytes());
+
+        // Act
+        byte[] pdf = perfilUsuarioService.generarPDFEntrada(100L, 1L);
+
+        // Assert
+        assertThat(pdf).isNotNull();
+        assertThat(pdf).isEqualTo("PDF Content".getBytes());
+        
+        // Verificar que se llamó a ticketService con código de asiento "General" (sin asiento)
+        verify(ticketService).generarTicketPdf(argThat(ticketDTO -> 
+            ticketDTO.getCodigoAsiento().equals("General") &&
+            ticketDTO.getFila() == null &&
+            ticketDTO.getColumna() == null
+        ));
+    }
+
+    @Test
+    @DisplayName("Debe lanzar error si asiento tiene zona null")
+    void testGenerarPDFEntrada_SinZona() {
+        // Arrange
+        com.cudeca.model.evento.Evento evento = new com.cudeca.model.evento.Evento();
+        evento.setId(1L);
+        evento.setNombre("Concierto Sin Zona");
+        evento.setLugar("Auditorio");
+        evento.setFechaInicio(java.time.OffsetDateTime.now());
+
+        com.cudeca.model.evento.TipoEntrada tipoEntrada = new com.cudeca.model.evento.TipoEntrada();
+        tipoEntrada.setId(1L);
+        tipoEntrada.setNombre("General");
+        tipoEntrada.setEvento(evento);
+
+        com.cudeca.model.evento.Asiento asiento = new com.cudeca.model.evento.Asiento();
+        asiento.setId(1L);
+        asiento.setCodigoEtiqueta("A-12");
+        asiento.setFila(1);
+        asiento.setColumna(12);
+        asiento.setZona(null);
+
+        com.cudeca.model.usuario.Usuario usuario = new com.cudeca.model.usuario.Usuario();
+        usuario.setId(1L);
+        usuario.setNombre("Juan Pérez");
+        usuario.setEmail("juan@example.com");
+
+        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
+        compra.setId(1L);
+        compra.setUsuario(usuario);
+        compra.setEmailContacto("juan@example.com");
+
+        com.cudeca.model.negocio.ArticuloEntrada articulo = new com.cudeca.model.negocio.ArticuloEntrada();
+        articulo.setId(1L);
+        articulo.setAsiento(asiento);
+        articulo.setTipoEntrada(tipoEntrada);
+        articulo.setCompra(compra);
+
+        com.cudeca.model.negocio.EntradaEmitida entrada = new com.cudeca.model.negocio.EntradaEmitida();
+        entrada.setId(100L);
+        entrada.setCodigoQR("QR-12345");
+        entrada.setEstado(com.cudeca.model.enums.EstadoEntrada.VALIDA);
+        entrada.setArticuloEntrada(articulo);
+
+        articulo.setEntradasEmitidas(java.util.List.of(entrada));
+        compra.setArticulos(java.util.List.of(articulo));
+
+        when(entradaEmitidaRepository.findById(100L)).thenReturn(Optional.of(entrada));
+
+        // Act & Assert
+        assertThatThrownBy(() -> perfilUsuarioService.generarPDFEntrada(100L, 1L))
+                .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    @DisplayName("Debe lanzar error si TipoEntrada es null")
+    void testGenerarPDFEntrada_SinEvento() {
+        // Arrange
+        com.cudeca.model.evento.ZonaRecinto zona = new com.cudeca.model.evento.ZonaRecinto();
+        zona.setId(1L);
+        zona.setNombre("Zona VIP");
+        zona.setEvento(null);
+
+        com.cudeca.model.evento.Asiento asiento = new com.cudeca.model.evento.Asiento();
+        asiento.setId(1L);
+        asiento.setCodigoEtiqueta("A-12");
+        asiento.setZona(zona);
+
+        com.cudeca.model.usuario.Usuario usuario = new com.cudeca.model.usuario.Usuario();
+        usuario.setId(1L);
+        usuario.setNombre("Juan Pérez");
+        usuario.setEmail("juan@example.com");
+
+        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
+        compra.setId(1L);
+        compra.setUsuario(usuario);
+        compra.setEmailContacto("juan@example.com");
+
+        com.cudeca.model.negocio.ArticuloEntrada articulo = new com.cudeca.model.negocio.ArticuloEntrada();
+        articulo.setId(1L);
+        articulo.setAsiento(asiento);
+        articulo.setTipoEntrada(null);
+        articulo.setCompra(compra);
+
+        com.cudeca.model.negocio.EntradaEmitida entrada = new com.cudeca.model.negocio.EntradaEmitida();
+        entrada.setId(100L);
+        entrada.setCodigoQR("QR-12345");
+        entrada.setEstado(com.cudeca.model.enums.EstadoEntrada.VALIDA);
+        entrada.setArticuloEntrada(articulo);
+
+        articulo.setEntradasEmitidas(java.util.List.of(entrada));
+        compra.setArticulos(java.util.List.of(articulo));
+
+        when(entradaEmitidaRepository.findById(100L)).thenReturn(Optional.of(entrada));
+
+        // Act & Assert
+        assertThatThrownBy(() -> perfilUsuarioService.generarPDFEntrada(100L, 1L))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @DisplayName("Debe generar PDF sin descripción de evento")
+    void testGenerarPDFEntrada_EventoSinDescripcion() throws Exception {
+        // Arrange
+        com.cudeca.model.evento.Evento evento = new com.cudeca.model.evento.Evento();
+        evento.setId(1L);
+        evento.setNombre("Concierto Benéfico");
+        evento.setDescripcion(null);
+        evento.setLugar("Teatro Central");
         evento.setFechaInicio(java.time.OffsetDateTime.now());
 
         com.cudeca.model.evento.ZonaRecinto zona = new com.cudeca.model.evento.ZonaRecinto();
@@ -725,97 +990,27 @@ class PerfilUsuarioServiceImplTest {
         asiento.setColumna(12);
         asiento.setZona(zona);
 
-        com.cudeca.model.negocio.ArticuloEntrada articulo = new com.cudeca.model.negocio.ArticuloEntrada();
-        articulo.setId(1L);
-        articulo.setAsiento(asiento);
+        com.cudeca.model.evento.TipoEntrada tipoEntrada = new com.cudeca.model.evento.TipoEntrada();
+        tipoEntrada.setId(1L);
+        tipoEntrada.setNombre("VIP");
+        tipoEntrada.setEvento(evento);
 
-        com.cudeca.model.negocio.EntradaEmitida entrada = new com.cudeca.model.negocio.EntradaEmitida();
-        entrada.setId(100L);
-        entrada.setCodigoQR("QR-12345");
-        entrada.setEstado(com.cudeca.model.enums.EstadoEntrada.VALIDA);
-        entrada.setArticuloEntrada(articulo);
-
-        articulo.setEntradasEmitidas(java.util.List.of(entrada));
+        com.cudeca.model.usuario.Usuario usuario = new com.cudeca.model.usuario.Usuario();
+        usuario.setId(1L);
+        usuario.setNombre("Juan Pérez");
+        usuario.setEmail("juan@example.com");
 
         com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
         compra.setId(1L);
-        compra.setArticulos(java.util.List.of(articulo));
-
-        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
-
-        // Act
-        byte[] pdf = perfilUsuarioService.generarPDFEntrada(100L, 1L);
-
-        // Assert
-        assertThat(pdf).isNotNull();
-        String contenido = new String(pdf, java.nio.charset.StandardCharsets.UTF_8);
-        
-        // Verificar que contiene toda la información
-        assertThat(contenido)
-            .contains("ID Entrada: 100")
-            .contains("Código QR: QR-12345")
-            .contains("Estado: VALIDA")
-            .contains("Código: A-12")
-            .contains("Fila: 1")
-            .contains("Columna: 12")
-            .contains("Zona: Zona VIP")
-            .contains("Evento: Concierto Benéfico")
-            .contains("Descripción: Un evento especial para recaudar fondos")
-            .contains("ENTRADA - CUDECA EVENT")
-            .contains("Conserve esta entrada para el evento");
-    }
-
-    @Test
-    @DisplayName("Debe generar PDF sin asiento")
-    void testGenerarPDFEntrada_SinAsiento() {
-        // Arrange
-        when(usuarioRepository.existsById(1L)).thenReturn(true);
-
-        com.cudeca.model.negocio.ArticuloEntrada articulo = new com.cudeca.model.negocio.ArticuloEntrada();
-        articulo.setId(1L);
-        articulo.setAsiento(null);
-
-        com.cudeca.model.negocio.EntradaEmitida entrada = new com.cudeca.model.negocio.EntradaEmitida();
-        entrada.setId(100L);
-        entrada.setCodigoQR("QR-12345");
-        entrada.setEstado(com.cudeca.model.enums.EstadoEntrada.VALIDA);
-        entrada.setArticuloEntrada(articulo);
-
-        articulo.setEntradasEmitidas(java.util.List.of(entrada));
-
-        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
-        compra.setId(1L);
-        compra.setArticulos(java.util.List.of(articulo));
-
-        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
-
-        // Act
-        byte[] pdf = perfilUsuarioService.generarPDFEntrada(100L, 1L);
-
-        // Assert
-        assertThat(pdf).isNotNull();
-        String contenido = new String(pdf, java.nio.charset.StandardCharsets.UTF_8);
-        
-        assertThat(contenido)
-            .contains("ID Entrada: 100")
-            .contains("Código QR: QR-12345")
-            .doesNotContain("INFORMACIÓN DEL ASIENTO");
-    }
-
-    @Test
-    @DisplayName("Debe generar PDF sin zona en asiento")
-    void testGenerarPDFEntrada_SinZona() {
-        // Arrange
-        when(usuarioRepository.existsById(1L)).thenReturn(true);
-
-        com.cudeca.model.evento.Asiento asiento = new com.cudeca.model.evento.Asiento();
-        asiento.setId(1L);
-        asiento.setCodigoEtiqueta("A-12");
-        asiento.setZona(null);
+        compra.setUsuario(usuario);
+        compra.setEmailContacto("juan@example.com");
 
         com.cudeca.model.negocio.ArticuloEntrada articulo = new com.cudeca.model.negocio.ArticuloEntrada();
         articulo.setId(1L);
         articulo.setAsiento(asiento);
+        articulo.setTipoEntrada(tipoEntrada);
+        articulo.setCompra(compra);
+        articulo.setPrecioUnitario(BigDecimal.valueOf(50.00));
 
         com.cudeca.model.negocio.EntradaEmitida entrada = new com.cudeca.model.negocio.EntradaEmitida();
         entrada.setId(100L);
@@ -824,121 +1019,23 @@ class PerfilUsuarioServiceImplTest {
         entrada.setArticuloEntrada(articulo);
 
         articulo.setEntradasEmitidas(java.util.List.of(entrada));
-
-        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
-        compra.setId(1L);
         compra.setArticulos(java.util.List.of(articulo));
 
-        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
+        when(entradaEmitidaRepository.findById(100L)).thenReturn(Optional.of(entrada));
+        when(ticketService.generarTicketPdf(any())).thenAnswer(invocation -> "PDF Content".getBytes());
 
         // Act
         byte[] pdf = perfilUsuarioService.generarPDFEntrada(100L, 1L);
 
         // Assert
         assertThat(pdf).isNotNull();
-        String contenido = new String(pdf, java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(pdf).isEqualTo("PDF Content".getBytes());
         
-        assertThat(contenido)
-            .contains("Código: A-12")
-            .doesNotContain("Zona:");
-    }
-
-    @Test
-    @DisplayName("Debe generar PDF sin evento en zona")
-    void testGenerarPDFEntrada_SinEvento() {
-        // Arrange
-        when(usuarioRepository.existsById(1L)).thenReturn(true);
-
-        com.cudeca.model.evento.ZonaRecinto zona = new com.cudeca.model.evento.ZonaRecinto();
-        zona.setId(1L);
-        zona.setNombre("Zona VIP");
-        zona.setEvento(null);
-
-        com.cudeca.model.evento.Asiento asiento = new com.cudeca.model.evento.Asiento();
-        asiento.setId(1L);
-        asiento.setCodigoEtiqueta("A-12");
-        asiento.setZona(zona);
-
-        com.cudeca.model.negocio.ArticuloEntrada articulo = new com.cudeca.model.negocio.ArticuloEntrada();
-        articulo.setId(1L);
-        articulo.setAsiento(asiento);
-
-        com.cudeca.model.negocio.EntradaEmitida entrada = new com.cudeca.model.negocio.EntradaEmitida();
-        entrada.setId(100L);
-        entrada.setCodigoQR("QR-12345");
-        entrada.setEstado(com.cudeca.model.enums.EstadoEntrada.VALIDA);
-        entrada.setArticuloEntrada(articulo);
-
-        articulo.setEntradasEmitidas(java.util.List.of(entrada));
-
-        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
-        compra.setId(1L);
-        compra.setArticulos(java.util.List.of(articulo));
-
-        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
-
-        // Act
-        byte[] pdf = perfilUsuarioService.generarPDFEntrada(100L, 1L);
-
-        // Assert
-        assertThat(pdf).isNotNull();
-        String contenido = new String(pdf, java.nio.charset.StandardCharsets.UTF_8);
-        
-        assertThat(contenido)
-            .contains("Zona: Zona VIP")
-            .doesNotContain("INFORMACIÓN DEL EVENTO");
-    }
-
-    @Test
-    @DisplayName("Debe generar PDF sin descripción de evento")
-    void testGenerarPDFEntrada_EventoSinDescripcion() {
-        // Arrange
-        when(usuarioRepository.existsById(1L)).thenReturn(true);
-
-        com.cudeca.model.evento.Evento evento = new com.cudeca.model.evento.Evento();
-        evento.setId(1L);
-        evento.setNombre("Concierto Benéfico");
-        evento.setDescripcion(null);
-        evento.setFechaInicio(java.time.OffsetDateTime.now());
-
-        com.cudeca.model.evento.ZonaRecinto zona = new com.cudeca.model.evento.ZonaRecinto();
-        zona.setId(1L);
-        zona.setNombre("Zona VIP");
-        zona.setEvento(evento);
-
-        com.cudeca.model.evento.Asiento asiento = new com.cudeca.model.evento.Asiento();
-        asiento.setId(1L);
-        asiento.setCodigoEtiqueta("A-12");
-        asiento.setZona(zona);
-
-        com.cudeca.model.negocio.ArticuloEntrada articulo = new com.cudeca.model.negocio.ArticuloEntrada();
-        articulo.setId(1L);
-        articulo.setAsiento(asiento);
-
-        com.cudeca.model.negocio.EntradaEmitida entrada = new com.cudeca.model.negocio.EntradaEmitida();
-        entrada.setId(100L);
-        entrada.setCodigoQR("QR-12345");
-        entrada.setEstado(com.cudeca.model.enums.EstadoEntrada.VALIDA);
-        entrada.setArticuloEntrada(articulo);
-
-        articulo.setEntradasEmitidas(java.util.List.of(entrada));
-
-        com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
-        compra.setId(1L);
-        compra.setArticulos(java.util.List.of(articulo));
-
-        when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
-
-        // Act
-        byte[] pdf = perfilUsuarioService.generarPDFEntrada(100L, 1L);
-
-        // Assert
-        assertThat(pdf).isNotNull();
-        String contenido = new String(pdf, java.nio.charset.StandardCharsets.UTF_8);
-        
-        assertThat(contenido)
-            .contains("Evento: Concierto Benéfico")
-            .doesNotContain("Descripción:");
+        // Verificar que se llamó a ticketService con evento sin descripción
+        verify(ticketService).generarTicketPdf(argThat(ticketDTO -> 
+            ticketDTO.getNombreEvento().equals("Concierto Benéfico") &&
+            ticketDTO.getDescripcionEvento() == null
+        ));
     }
 
     @Test
@@ -963,8 +1060,8 @@ class PerfilUsuarioServiceImplTest {
         when(monederoRepository.findByUsuario_Id(1L)).thenReturn(Optional.of(monedero));
 
         // Act
-        java.util.List<com.cudeca.model.negocio.MovimientoMonedero> movimientos = 
-            perfilUsuarioService.obtenerMovimientosMonedero(1L);
+        java.util.List<com.cudeca.model.negocio.MovimientoMonedero> movimientos =
+                perfilUsuarioService.obtenerMovimientosMonedero(1L);
 
         // Assert
         assertThat(movimientos).hasSize(2);
@@ -1007,12 +1104,12 @@ class PerfilUsuarioServiceImplTest {
         when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
 
         // Act
-        java.util.List<java.util.Map<String, Object>> historial = 
-            perfilUsuarioService.obtenerHistorialCompras(1L);
+        java.util.List<java.util.Map<String, Object>> historial =
+                perfilUsuarioService.obtenerHistorialCompras(1L);
 
         // Assert
         assertThat(historial).hasSize(1);
-        
+
         java.util.Map<String, Object> dto = historial.get(0);
         assertThat(dto.get("id")).isEqualTo("1");
         assertThat(dto.get("date")).asString().contains("15 de noviembre, 2024");
@@ -1020,7 +1117,7 @@ class PerfilUsuarioServiceImplTest {
         assertThat(dto.get("total")).isEqualTo("100.00€");
         assertThat(dto.get("title")).isEqualTo("Concierto Benéfico CUDECA");
         assertThat(dto.get("tickets")).isEqualTo("2 entradas");
-        
+
         verify(usuarioRepository).existsById(1L);
         verify(compraRepository).findByUsuario_Id(1L);
     }
@@ -1033,8 +1130,8 @@ class PerfilUsuarioServiceImplTest {
         when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.Collections.emptyList());
 
         // Act
-        java.util.List<java.util.Map<String, Object>> historial = 
-            perfilUsuarioService.obtenerHistorialCompras(1L);
+        java.util.List<java.util.Map<String, Object>> historial =
+                perfilUsuarioService.obtenerHistorialCompras(1L);
 
         // Assert
         assertThat(historial).isEmpty();
@@ -1049,8 +1146,8 @@ class PerfilUsuarioServiceImplTest {
 
         // Act & Assert
         assertThatThrownBy(() -> perfilUsuarioService.obtenerHistorialCompras(999L))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Usuario no encontrado");
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Usuario no encontrado");
 
         verify(usuarioRepository).existsById(999L);
         verify(compraRepository, never()).findByUsuario_Id(anyLong());
@@ -1063,11 +1160,11 @@ class PerfilUsuarioServiceImplTest {
         when(usuarioRepository.existsById(1L)).thenReturn(true);
 
         // Crear artículo de donación (sin evento)
-        com.cudeca.model.negocio.ArticuloDonacion articuloDonacion = 
-            com.cudeca.model.negocio.ArticuloDonacion.builder()
-                .precioUnitario(new BigDecimal("25.00"))
-                .cantidad(1)
-                .build();
+        com.cudeca.model.negocio.ArticuloDonacion articuloDonacion =
+                com.cudeca.model.negocio.ArticuloDonacion.builder()
+                        .precioUnitario(new BigDecimal("25.00"))
+                        .cantidad(1)
+                        .build();
         articuloDonacion.setId(1L);
 
         com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
@@ -1079,8 +1176,8 @@ class PerfilUsuarioServiceImplTest {
         when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
 
         // Act
-        java.util.List<java.util.Map<String, Object>> historial = 
-            perfilUsuarioService.obtenerHistorialCompras(1L);
+        java.util.List<java.util.Map<String, Object>> historial =
+                perfilUsuarioService.obtenerHistorialCompras(1L);
 
         // Assert
         assertThat(historial).hasSize(1);
@@ -1110,8 +1207,8 @@ class PerfilUsuarioServiceImplTest {
         when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
 
         // Act
-        java.util.List<java.util.Map<String, Object>> historial = 
-            perfilUsuarioService.obtenerHistorialCompras(1L);
+        java.util.List<java.util.Map<String, Object>> historial =
+                perfilUsuarioService.obtenerHistorialCompras(1L);
 
         // Assert
         assertThat(historial).hasSize(1);
@@ -1133,11 +1230,11 @@ class PerfilUsuarioServiceImplTest {
         articulo1.setCantidad(2);
         articulo1.setTipoEntrada(null);
 
-        com.cudeca.model.negocio.ArticuloDonacion articulo2 = 
-            com.cudeca.model.negocio.ArticuloDonacion.builder()
-                .precioUnitario(new BigDecimal("25.50"))
-                .cantidad(1)
-                .build();
+        com.cudeca.model.negocio.ArticuloDonacion articulo2 =
+                com.cudeca.model.negocio.ArticuloDonacion.builder()
+                        .precioUnitario(new BigDecimal("25.50"))
+                        .cantidad(1)
+                        .build();
         articulo2.setId(2L);
 
         com.cudeca.model.negocio.Compra compra = new com.cudeca.model.negocio.Compra();
@@ -1149,8 +1246,8 @@ class PerfilUsuarioServiceImplTest {
         when(compraRepository.findByUsuario_Id(1L)).thenReturn(java.util.List.of(compra));
 
         // Act
-        java.util.List<java.util.Map<String, Object>> historial = 
-            perfilUsuarioService.obtenerHistorialCompras(1L);
+        java.util.List<java.util.Map<String, Object>> historial =
+                perfilUsuarioService.obtenerHistorialCompras(1L);
 
         // Assert
         assertThat(historial).hasSize(1);
