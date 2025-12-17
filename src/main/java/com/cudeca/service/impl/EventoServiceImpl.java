@@ -8,7 +8,7 @@ import com.cudeca.model.evento.Evento;
 import com.cudeca.repository.EventoRepository;
 import com.cudeca.service.EventoService;
 import com.cudeca.service.SeatMapService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +32,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<EventoDTO> getAllEventos() {
         return eventoRepository.findAll().stream()
                 .map(eventoMapper::toEventoDTO)
@@ -39,6 +40,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public EventoDTO getEventoById(Long id) {
         Evento evento = eventoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Evento no encontrado con id: " + id));
