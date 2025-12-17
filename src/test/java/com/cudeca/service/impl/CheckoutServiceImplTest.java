@@ -67,6 +67,12 @@ class CheckoutServiceImplTest {
     private DatosFiscalesRepository datosFiscalesRepository;
 
     @Mock
+    private EntradaEmitidaRepository entradaEmitidaRepository;
+
+    @Mock
+    private com.cudeca.service.TicketService ticketService;
+
+    @Mock
     private ObjectMapper objectMapper;
 
     @InjectMocks
@@ -1073,6 +1079,198 @@ class CheckoutServiceImplTest {
         assertThat(asiento1.getEstado()).isEqualTo(com.cudeca.model.enums.EstadoAsiento.BLOQUEADO);
         assertThat(asiento2.getEstado()).isEqualTo(com.cudeca.model.enums.EstadoAsiento.BLOQUEADO);
         verify(asientoRepository).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("Debe crear datos fiscales para invitado con datos completos")
+    void testCrearDatosFiscalesParaInvitado_DatosCompletos() throws Exception {
+        // Arrange
+        checkoutRequest.setUsuarioId(null);
+        checkoutRequest.setEmailContacto("invitado@example.com");
+
+        CheckoutRequest.FiscalDataDTO datosFiscales = CheckoutRequest.FiscalDataDTO.builder()
+                .nombreCompleto("Invitado Test")
+                .nif("12345678Z")
+                .direccion("Calle Invitado 123")
+                .pais("España")
+                .build();
+        checkoutRequest.setDatosFiscales(datosFiscales);
+
+        Invitado invitado = new Invitado();
+        invitado.setId(1L);
+        invitado.setEmail("invitado@example.com");
+
+        when(invitadoRepository.findByEmail("invitado@example.com")).thenReturn(Optional.of(invitado));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+        when(objectMapper.writeValueAsString(any())).thenReturn("{\"test\": \"data\"}");
+
+        // Mock para DatosFiscales guardados
+        com.cudeca.model.usuario.DatosFiscales datosFiscalesMock = new com.cudeca.model.usuario.DatosFiscales();
+        datosFiscalesMock.setId(1L);
+        datosFiscalesMock.setNombreCompleto("Invitado Test");
+        datosFiscalesMock.setNif("12345678Z");
+
+        when(datosFiscalesRepository.save(any(com.cudeca.model.usuario.DatosFiscales.class))).thenReturn(datosFiscalesMock);
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .invitado(invitado)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        verify(datosFiscalesRepository).save(argThat(df ->
+            df.getNombreCompleto().equals("Invitado Test") &&
+            df.getNif().equals("12345678Z") &&
+            df.getUsuario() == null
+        ));
+    }
+
+    @Test
+    @DisplayName("Debe manejar creación de datos fiscales cuando el nombre completo es null")
+    void testCrearDatosFiscalesParaInvitado_NombreNull() throws Exception {
+        // Arrange
+        checkoutRequest.setUsuarioId(null);
+        checkoutRequest.setEmailContacto("invitado@example.com");
+
+        // Nota: Si nombreCompleto es null, el método generarCertificadoFiscal retornará early
+        // y no llamará a crearDatosFiscalesParaInvitado. Este test valida ese comportamiento.
+        CheckoutRequest.FiscalDataDTO datosFiscales = CheckoutRequest.FiscalDataDTO.builder()
+                .nombreCompleto(null)
+                .nif("12345678Z")
+                .direccion("Calle Test")
+                .pais("España")
+                .build();
+        checkoutRequest.setDatosFiscales(datosFiscales);
+
+        Invitado invitado = new Invitado();
+        invitado.setId(1L);
+        invitado.setEmail("invitado@example.com");
+
+        when(invitadoRepository.findByEmail("invitado@example.com")).thenReturn(Optional.of(invitado));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .invitado(invitado)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        // El método generarCertificadoFiscal retorna early cuando nombreCompleto es null/blank
+        verify(datosFiscalesRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe manejar creación de datos fiscales cuando el nombre completo está vacío")
+    void testCrearDatosFiscalesParaInvitado_NombreVacio() throws Exception {
+        // Arrange
+        checkoutRequest.setUsuarioId(null);
+        checkoutRequest.setEmailContacto("invitado@example.com");
+
+        // Nota: Si nombreCompleto es blank, el método generarCertificadoFiscal retornará early
+        CheckoutRequest.FiscalDataDTO datosFiscales = CheckoutRequest.FiscalDataDTO.builder()
+                .nombreCompleto("   ")
+                .nif("12345678Z")
+                .direccion("Calle Test")
+                .pais("España")
+                .build();
+        checkoutRequest.setDatosFiscales(datosFiscales);
+
+        Invitado invitado = new Invitado();
+        invitado.setId(1L);
+        invitado.setEmail("invitado@example.com");
+
+        when(invitadoRepository.findByEmail("invitado@example.com")).thenReturn(Optional.of(invitado));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .invitado(invitado)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        // El método generarCertificadoFiscal retorna early cuando nombreCompleto es blank
+        verify(datosFiscalesRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Debe crear datos fiscales para invitado con campos opcionales null")
+    void testCrearDatosFiscalesParaInvitado_CamposOpcionalesNull() throws Exception {
+        // Arrange
+        checkoutRequest.setUsuarioId(null);
+        checkoutRequest.setEmailContacto("invitado@example.com");
+
+        CheckoutRequest.FiscalDataDTO datosFiscales = CheckoutRequest.FiscalDataDTO.builder()
+                .nombreCompleto("Invitado Test")
+                .nif(null)
+                .direccion(null)
+                .pais(null)
+                .build();
+        checkoutRequest.setDatosFiscales(datosFiscales);
+
+        Invitado invitado = new Invitado();
+        invitado.setId(1L);
+        invitado.setEmail("invitado@example.com");
+
+        when(invitadoRepository.findByEmail("invitado@example.com")).thenReturn(Optional.of(invitado));
+        when(tipoEntradaRepository.findById(1L)).thenReturn(Optional.of(tipoEntrada));
+        when(objectMapper.writeValueAsString(any())).thenReturn("{\"test\": \"data\"}");
+
+        com.cudeca.model.usuario.DatosFiscales datosFiscalesMock = new com.cudeca.model.usuario.DatosFiscales();
+        datosFiscalesMock.setId(1L);
+        datosFiscalesMock.setNombreCompleto("Invitado Test");
+        datosFiscalesMock.setNif("");
+        datosFiscalesMock.setDireccion("");
+        datosFiscalesMock.setPais("");
+
+        when(datosFiscalesRepository.save(any(com.cudeca.model.usuario.DatosFiscales.class))).thenReturn(datosFiscalesMock);
+
+        Compra compraGuardada = Compra.builder()
+                .id(100L)
+                .invitado(invitado)
+                .estado(EstadoCompra.PENDIENTE)
+                .fecha(java.time.OffsetDateTime.now())
+                .articulos(new ArrayList<>())
+                .build();
+
+        when(compraRepository.save(any(Compra.class))).thenReturn(compraGuardada);
+
+        // Act
+        CheckoutResponse response = checkoutService.procesarCheckout(checkoutRequest);
+
+        // Assert
+        assertThat(response).isNotNull();
+        verify(datosFiscalesRepository).save(argThat(df ->
+            df.getNif().equals("") &&
+            df.getDireccion().equals("") &&
+            df.getPais().equals("")
+        ));
     }
 }
 
