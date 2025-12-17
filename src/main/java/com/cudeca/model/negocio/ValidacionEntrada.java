@@ -45,7 +45,7 @@ public class ValidacionEntrada {
     @PrePersist
     public void prePersist() {
         if (this.fechaHora == null) {
-            this.fechaHora = OffsetDateTime.from(Instant.now());
+            this.fechaHora = OffsetDateTime.now();
         }
     }
 }
