@@ -5,7 +5,9 @@ import com.cudeca.dto.QrValidacionResponseDTO;
 import com.cudeca.model.enums.EstadoEntrada;
 import com.cudeca.model.negocio.EntradaEmitida;
 import com.cudeca.model.negocio.ValidacionEntrada;
+import com.cudeca.model.usuario.Usuario;
 import com.cudeca.repository.EntradaEmitidaRepository;
+import com.cudeca.repository.UsuarioRepository;
 import com.cudeca.repository.ValidacionEntradaRepository;
 import com.cudeca.service.QrValidadorService;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ public class QrValidadorServiceImpl implements QrValidadorService {
 
     private final EntradaEmitidaRepository entradaEmitidaRepository;
     private final ValidacionEntradaRepository validacionEntradaRepository;
+    private final UsuarioRepository usuarioRepository;
 
     /**
      * Valida una entrada por su código QR y cambia su estado de VALIDA a USADA.
@@ -97,13 +100,19 @@ public class QrValidadorServiceImpl implements QrValidadorService {
         }
 
         // Si llegamos aquí, el estado es VALIDA
+        // Buscar el usuario validador
+        Usuario usuarioValidador = usuarioRepository.findById(qrValidacionDTO.getUsuarioValidadorId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Usuario validador no encontrado con ID: " + qrValidacionDTO.getUsuarioValidadorId()));
+
         // Cambiar estado a USADA
         entrada.setEstado(EstadoEntrada.USADA);
         EntradaEmitida entradaActualizada = entradaEmitidaRepository.save(entrada);
 
-        // Registrar la validación (opcional pero recomendado para auditoría)
+        // Registrar la validación (auditoría)
         ValidacionEntrada validacionEntrada = ValidacionEntrada.builder()
                 .entradaEmitida(entradaActualizada)
+                .personalValidador(usuarioValidador)
                 .dispositivoId(qrValidacionDTO.getDispositivoId())
                 .build();
         validacionEntradaRepository.save(validacionEntrada);

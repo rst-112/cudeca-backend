@@ -26,4 +26,10 @@ public class QrValidacionDTO {
      * Útil para registrar desde qué dispositivo se validó.
      */
     private String dispositivoId;
+
+    /**
+     * ID del usuario que realiza la validación.
+     * Es obligatorio para registrar quién validó la entrada.
+     */
+    private Long usuarioValidadorId;
 }
