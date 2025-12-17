@@ -1,13 +1,12 @@
 package com.cudeca.controller;
 
+import com.cudeca.dto.EntradaUsuarioDTO;
 import com.cudeca.dto.UserProfileDTO;
-import com.cudeca.model.negocio.EntradaEmitida;
 import com.cudeca.model.negocio.Monedero;
 import com.cudeca.model.negocio.MovimientoMonedero;
 import com.cudeca.service.PerfilUsuarioService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -62,17 +61,8 @@ public class PerfilUsuarioController {
     public ResponseEntity<?> obtenerHistorialCompras(@PathVariable Long usuarioId) {
         try {
             log.info("GET /api/perfil/{}/compras - Obteniendo historial", usuarioId);
-            // Llamamos al servicio nuevo que acabamos de crear (asegúrate de haberlo añadido a la interfaz)
-            // Si te da error aquí, es porque falta añadirlo a la Interface PerfilUsuarioService
-            // Por ahora, asumimos que Java es listo, pero recuerda actualizar la interfaz.
-
-            // TRUCO: Si no quieres tocar la interfaz ahora, puedes hacer casting (no recomendado pero funciona rápido):
-            // return ResponseEntity.ok(((PerfilUsuarioServiceImpl) perfilUsuarioService).obtenerHistorialCompras(usuarioId));
-
-            // LO CORRECTO: Añade el método a la interfaz y usa esto:
-            var historial = ((com.cudeca.service.impl.PerfilUsuarioServiceImpl) perfilUsuarioService).obtenerHistorialCompras(usuarioId);
+            List<Map<String, Object>> historial = perfilUsuarioService.obtenerHistorialCompras(usuarioId);
             return ResponseEntity.ok(historial);
-
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
@@ -105,7 +95,7 @@ public class PerfilUsuarioController {
      * Actualiza el perfil de un usuario.
      *
      * @param usuarioId ID del usuario
-     * @param payload Datos a actualizar (nombre, direccion)
+     * @param payload   Datos a actualizar (nombre, direccion)
      * @return Perfil actualizado
      */
     @PutMapping("/{usuarioId}")
@@ -145,7 +135,7 @@ public class PerfilUsuarioController {
     public ResponseEntity<?> obtenerEntradas(@PathVariable Long usuarioId) {
         try {
             log.info("GET /api/perfil/{}/entradas - Obteniendo entradas del usuario", usuarioId);
-            List<EntradaEmitida> entradas = perfilUsuarioService.obtenerEntradasUsuario(usuarioId);
+            List<EntradaUsuarioDTO> entradas = perfilUsuarioService.obtenerEntradasUsuario(usuarioId);
             return ResponseEntity.ok(entradas);
         } catch (IllegalArgumentException e) {
             log.error("Usuario no encontrado: {}", usuarioId);
@@ -192,6 +182,29 @@ public class PerfilUsuarioController {
             log.error("Error generando PDF de entrada", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error interno generando PDF"));
+        }
+    }
+
+    /**
+     *
+     * @param usuarioId ID del usuario
+     * @param compraId  ID de la compra
+     * @return PDF completo
+     */
+    @GetMapping("/{usuarioId}/compras/{compraId}/pdf")
+    public ResponseEntity<?> descargarResumenCompra(
+            @PathVariable Long usuarioId,
+            @PathVariable Long compraId) {
+        try {
+            byte[] pdfBytes = perfilUsuarioService.generarResumenCompraPdf(compraId, usuarioId);
+
+            var headers = new org.springframework.http.HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "resumen_compra_" + compraId + ".pdf");
+
+            return ResponseEntity.ok().headers(headers).body(pdfBytes);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Error generando factura"));
         }
     }
 

@@ -2,8 +2,11 @@ package com.cudeca.repository;
 
 import com.cudeca.model.negocio.EntradaEmitida;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -21,4 +24,7 @@ public interface EntradaEmitidaRepository extends JpaRepository<EntradaEmitida, 
      * Cuenta entradas asociadas a un artículo de entrada.
      */
     long countByArticuloEntrada_Id(Long articuloEntradaId);
+
+    @Query("SELECT e FROM EntradaEmitida e WHERE e.articuloEntrada.compra.id = :compraId")
+    List<EntradaEmitida> findByCompraId(@Param("compraId") Long compraId);
 }
